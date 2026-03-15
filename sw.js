@@ -1,6 +1,11 @@
-// PPL 2026 Main Service Worker
-const CACHE = 'ppl2026-v4';
-const STATIC = ['/', '/index.html', '/manifest.json', '/firebase-messaging-sw.js'];
+// PPL 2026 Service Worker v5
+const CACHE = 'ppl2026-v5';
+const STATIC = ['/', '/index.html', '/manifest.json'];
+
+// IMPORTANT: Never intercept Firebase requests
+function isFirebase(url) {
+  return url.includes('firebasedatabase.app') || url.includes('googleapis.com');
+}
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)));
@@ -9,41 +14,38 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
+  // NEVER intercept Firebase/Google API calls — let them go direct
+  if (isFirebase(e.request.url)) return;
   if (e.request.method !== 'GET') return;
+
   e.respondWith(
     fetch(e.request)
-      .then(res => { caches.open(CACHE).then(c => c.put(e.request, res.clone())); return res; })
+      .then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      })
       .catch(() => caches.match(e.request))
   );
-});
-
-// Fallback push handler (when firebase-messaging-sw.js is not active)
-self.addEventListener('push', e => {
-  if (!e.data) return;
-  try {
-    const data = e.data.json();
-    const title = data.notification?.title || 'PPL 2026';
-    const body  = data.notification?.body  || '';
-    e.waitUntil(
-      self.registration.showNotification(title, {
-        body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
-        tag: 'ppl-' + Date.now(), vibrate: [200, 100, 200]
-      })
-    );
-  } catch(err) {}
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
     clients.matchAll({ type: 'window' }).then(list => {
-      for (const c of list) { if (c.url.includes(self.location.origin) && 'focus' in c) return c.focus(); }
+      for (const c of list) {
+        if (c.url.includes(self.location.origin) && 'focus' in c) return c.focus();
+      }
       if (clients.openWindow) return clients.openWindow('/');
     })
   );
