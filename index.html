@@ -424,7 +424,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--deep);color:var(--tx);ov
   <div class="stitle">Pattan Premier League</div>
   <div class="ssub">Since 2010 · 16th Edition · 2026</div>
   <div class="sbar"><div class="sfill"></div></div>
-  <div class="spl-status" id="splStatus">Connecting to Firebase…</div>
+  <div class="spl-status" id="splStatus">Loading PPL 2026…</div>
 </div>
 
 <!-- APP -->
@@ -1005,17 +1005,20 @@ function getStats(teamName){
 // at the end of <body> once the compat SDK has loaded and DOM is ready.
 
 function setupListeners(){
-  // Real-time listeners for every data node
-  FDB.dbListen('groups',   v=>{ GROUPS  = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderGroups();renderPoints();renderTeams();});
-  FDB.dbListen('teams',    v=>{ TEAMS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderTeams();renderGroups();renderPoints();updateStats();populateSquadTeamSel();});
-  FDB.dbListen('matches',  v=>{ MATCHES = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderSchedule();renderGroups();renderPoints();renderTodayPoster();renderCountdown();updateStats(); if(IS_ADMIN)renderAMatchList();});
+  // Boot app immediately — don't wait, render as data arrives
+  let _booted = false;
+  function maybeboot(){ if(!_booted){ _booted=true; bootApp(); } }
+  // Boot after first critical listeners respond (or max 800ms)
+  setTimeout(maybeboot, 800);
+  FDB.dbListen('groups',   v=>{ GROUPS  = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  maybeboot(); renderGroups();renderPoints();renderTeams(); if(IS_ADMIN)renderAGrpList();});
+  FDB.dbListen('teams',    v=>{ TEAMS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  maybeboot(); renderTeams();renderGroups();renderPoints();updateStats();populateSquadTeamSel(); if(IS_ADMIN)renderATeamList();});
+  FDB.dbListen('matches',  v=>{ MATCHES = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  maybeboot(); renderSchedule();renderGroups();renderPoints();renderTodayPoster();renderCountdown();updateStats(); if(IS_ADMIN)renderAMatchList();});
   FDB.dbListen('players',  v=>{ PLAYERS = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderPlayers('batting'); if(IS_ADMIN)renderAPlayerList();});
   FDB.dbListen('polls',    v=>{ POLLS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderPolls(); if(IS_ADMIN)renderAPollList();});
   FDB.dbListen('orgs',     v=>{ ORGS    = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderOrgs(); if(IS_ADMIN)renderAOrgList();});
-  FDB.dbListen('rules',    v=>{ RULES   = v?(Array.isArray(v)?v:Object.values(v)):[];           renderRules(); if(IS_ADMIN)renderARuleList();});
-  FDB.dbListen('ann',      v=>{ ANN     = v?(Array.isArray(v)?v:Object.values(v)):[];           renderTicker(); if(IS_ADMIN)renderAAnnList();});
-  FDB.dbListen('gallery',  v=>{ GALLERY = v?Object.entries(v).map(([id,d])=>({id,...d})):[];   renderGallery('all');});
-  // Live match state — real-time for all viewers
+  FDB.dbListen('rules',    v=>{ RULES   = v?(Array.isArray(v)?v:Object.values(v)):[];          renderRules(); if(IS_ADMIN)renderARuleList();});
+  FDB.dbListen('ann',      v=>{ ANN     = v?(Array.isArray(v)?v:Object.values(v)):[];          renderTicker(); if(IS_ADMIN)renderAAnnList();});
+  FDB.dbListen('gallery',  v=>{ GALLERY = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderGallery('all');});
   FDB.dbListen('live', v=>{
     LIVE=v;
     renderLiveCard();
@@ -1025,9 +1028,6 @@ function setupListeners(){
     document.getElementById('liveBadge').classList.toggle('show', hasLive);
     if(IS_ADMIN && hasLive) syncAdminScoreDisplay();
   });
-
-  // Boot app after brief delay (let listeners fire)
-  setTimeout(bootApp, 1800);
 }
 
 function bootApp(){
@@ -2040,16 +2040,18 @@ function editGrp(id){openGrpModal(id);}
 function delGrp(id){
   if(!confirm('Delete this group?')) return;
   TEAMS.filter(t=>t.group===id).forEach(t=>FDB.dbUpd('teams/'+t.id,{group:''}));
-  FDB.dbDel('groups/'+id); CM('grpModal'); T('Group deleted');
+  FDB.dbDel('groups/'+id).then(()=>{CM('grpModal');T('Group deleted');}).catch(e=>T('❌ '+e.message));
 }
 function saveGrp(){
   const id=document.getElementById('grpEId').value;
   const name=document.getElementById('grpName').value.trim();
   const color=document.getElementById('grpColor').value;
   if(!name){T('Enter group name');return;}
+  if(!FDB){T('Not connected to Firebase');return;}
   const key=id||UID();
-  FDB.dbSet('groups/'+key,{name,color});
-  CM('grpModal'); T(id?'✅ Group updated':'✅ Group added');
+  FDB.dbSet('groups/'+key,{name,color})
+    .then(()=>{ CM('grpModal'); T(id?'✅ Group updated':'✅ Group added'); })
+    .catch(e=>{ T('❌ Error: '+e.message); console.error(e); });
 }
 
 // ─────────────────────────────────────────
@@ -2079,14 +2081,17 @@ function openTeamModal(id){
 function editTeam(id){openTeamModal(id);}
 function delTeam(id){
   if(!confirm('Delete team?')) return;
-  FDB.dbDel('teams/'+id); T('Team deleted');
+  FDB.dbDel('teams/'+id).then(()=>T('Team deleted')).catch(e=>T('❌ '+e.message));
 }
 function saveTeam(){
   const id=document.getElementById('teamEId').value;
   const name=document.getElementById('teamName').value.trim();
   if(!name){T('Enter team name');return;}
+  if(!FDB){T('Not connected');return;}
   const obj={name,emoji:document.getElementById('teamEmoji').value.trim()||'🏏',captain:document.getElementById('teamCap').value.trim(),group:document.getElementById('teamGroup').value};
-  FDB.dbSet('teams/'+(id||UID()),obj); CM('teamModal'); T(id?'✅ Team updated':'✅ Team added');
+  FDB.dbSet('teams/'+(id||UID()),obj)
+    .then(()=>{ CM('teamModal'); T(id?'✅ Team updated':'✅ Team added'); })
+    .catch(e=>{ T('❌ Error: '+e.message); });
 }
 
 // ─────────────────────────────────────────
@@ -2148,14 +2153,17 @@ function openMatchModal(id){
   OM('matchModal');
 }
 function editMatch(id){openMatchModal(id);}
-function delMatch(id){if(!confirm('Delete match?'))return;FDB.dbDel('matches/'+id);T('Match deleted');}
+function delMatch(id){if(!confirm('Delete match?'))return;FDB.dbDel('matches/'+id).then(()=>T('Match deleted')).catch(e=>T('❌ '+e.message));}
 function saveMatch(){
   const id=document.getElementById('matchEId').value;
   const t1=document.getElementById('mT1').value.trim();
   const t2=document.getElementById('mT2').value.trim();
   if(!t1||!t2){T('Select both teams');return;}
+  if(!FDB){T('Not connected');return;}
   const obj={stage:document.getElementById('mStage').value,group:document.getElementById('mGroup').value,no:document.getElementById('mNo').value.trim(),t1,t2,date:document.getElementById('mDate').value,time:document.getElementById('mTime').value,year:parseInt(document.getElementById('mYear').value)||2026,venue:document.getElementById('mVenue').value.trim()||'Pattan Cricket Ground',status:document.getElementById('mStatus').value,result:document.getElementById('mResult').value.trim(),s1:document.getElementById('mS1').value.trim(),s2:document.getElementById('mS2').value.trim(),overs:16};
-  FDB.dbSet('matches/'+(id||UID()),obj); CM('matchModal'); T(id?'✅ Match updated':'✅ Match added');
+  FDB.dbSet('matches/'+(id||UID()),obj)
+    .then(()=>{ CM('matchModal'); T(id?'✅ Match updated':'✅ Match added'); })
+    .catch(e=>{ T('❌ Error: '+e.message); });
 }
 function openStatusModal(){
   document.getElementById('stSel').innerHTML=MATCHES.map(m=>`<option value="${m.id}">[${m.no||'?'}] ${m.t1} vs ${m.t2}</option>`).join('');
@@ -2173,7 +2181,7 @@ function saveStatus(){
   if(s1) updates.s1=s1;
   if(s2) updates.s2=s2;
   if(date&&status==='postponed') updates.date=date;
-  FDB.dbUpd('matches/'+id,updates); CM('statusModal'); T(`✅ Status → ${SL(status)}`);
+  FDB.dbUpd('matches/'+id,updates).then(()=>{CM('statusModal');T(`✅ Status → ${SL(status)}`);}).catch(e=>T('❌ '+e.message));
 }
 
 // ─────────────────────────────────────────
@@ -2207,13 +2215,16 @@ function openPlayerModal(id){
   OM('playerModal');
 }
 function editPlayer(id){openPlayerModal(id);}
-function delPlayer(id){if(!confirm('Delete player?'))return;FDB.dbDel('players/'+id);T('Player deleted');}
+function delPlayer(id){if(!confirm('Delete player?'))return;FDB.dbDel('players/'+id).then(()=>T('Player deleted')).catch(e=>T('❌ '+e.message));}
 function savePlayer(){
   const id=document.getElementById('playerEId').value;
   const name=document.getElementById('pName').value.trim();
   if(!name){T('Enter name');return;}
+  if(!FDB){T('Not connected');return;}
   const obj={name,emoji:document.getElementById('pEmoji').value.trim()||'🏏',team:document.getElementById('pTeam').value,role:document.getElementById('pRole').value,runs:parseInt(document.getElementById('pRuns').value)||0,wickets:parseInt(document.getElementById('pWkts').value)||0,sr:parseFloat(document.getElementById('pSR').value)||0,best:document.getElementById('pBest').value.trim()};
-  FDB.dbSet('players/'+(id||UID()),obj); CM('playerModal'); T(id?'✅ Updated':'✅ Player added');
+  FDB.dbSet('players/'+(id||UID()),obj)
+    .then(()=>{ CM('playerModal'); T(id?'✅ Updated':'✅ Player added'); })
+    .catch(e=>{ T('❌ Error: '+e.message); });
 }
 
 // ─────────────────────────────────────────
@@ -2227,13 +2238,16 @@ function renderAPollList(){
     </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No polls yet</div>';
 }
 function openPollModal(){['pollType','pollQ','pollO1','pollO2','pollO3','pollO4'].forEach(x=>document.getElementById(x).value='');OM('pollModal');}
-function delPoll(id){FDB.dbDel('polls/'+id);T('Poll deleted');}
+function delPoll(id){FDB.dbDel('polls/'+id).then(()=>T('Poll deleted')).catch(e=>T('❌ '+e.message));}
 function savePoll(){
   const type=document.getElementById('pollType').value.trim()||'Poll';
   const q=document.getElementById('pollQ').value.trim();
   const opts=['pollO1','pollO2','pollO3','pollO4'].map(x=>document.getElementById(x).value.trim()).filter(Boolean);
   if(!q||opts.length<2){T('Enter question + at least 2 options');return;}
-  FDB.dbSet('polls/'+UID(),{type,question:q,options:opts,votes:new Array(opts.length).fill(0),votedBy:{}}); CM('pollModal'); T('✅ Poll added');
+  if(!FDB){T('Not connected');return;}
+  FDB.dbSet('polls/'+UID(),{type,question:q,options:opts,votes:new Array(opts.length).fill(0),votedBy:{}})
+    .then(()=>{ CM('pollModal'); T('✅ Poll added'); })
+    .catch(e=>{ T('❌ Error: '+e.message); });
 }
 
 // ─────────────────────────────────────────
@@ -2241,10 +2255,9 @@ function savePoll(){
 // ─────────────────────────────────────────
 function addAnn(){
   const txt=document.getElementById('newAnn').value.trim();
-  if(!txt) return;
+  if(!txt||!FDB) return;
   const newList=[txt,...ANN].slice(0,30);
-  FDB.dbSet('ann',newList);
-  document.getElementById('newAnn').value=''; T('📢 Announcement posted');
+  FDB.dbSet('ann',newList).then(()=>{document.getElementById('newAnn').value='';T('📢 Posted');}).catch(e=>T('❌ '+e.message));
 }
 function renderAAnnList(){
   document.getElementById('annList').innerHTML=ANN.map((a,i)=>`
@@ -2253,12 +2266,11 @@ function renderAAnnList(){
       <button onclick="delAnn(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;flex-shrink:0">✕</button>
     </div>`).join('');
 }
-function delAnn(i){const n=[...ANN];n.splice(i,1);FDB.dbSet('ann',n);}
+function delAnn(i){if(!FDB)return;const n=[...ANN];n.splice(i,1);FDB.dbSet('ann',n).catch(e=>T('❌ '+e.message));}
 function addRule(){
   const txt=document.getElementById('newRule').value.trim();
-  if(!txt) return;
-  FDB.dbSet('rules',[...RULES,txt]);
-  document.getElementById('newRule').value=''; T('✅ Rule added');
+  if(!txt||!FDB) return;
+  FDB.dbSet('rules',[...RULES,txt]).then(()=>{document.getElementById('newRule').value='';T('✅ Rule added');}).catch(e=>T('❌ '+e.message));
 }
 function renderARuleList(){
   document.getElementById('aRuleList').innerHTML=RULES.map((r,i)=>`
@@ -2267,7 +2279,7 @@ function renderARuleList(){
       <button onclick="delRule(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem">✕</button>
     </div>`).join('');
 }
-function delRule(i){const n=[...RULES];n.splice(i,1);FDB.dbSet('rules',n);}
+function delRule(i){if(!FDB)return;const n=[...RULES];n.splice(i,1);FDB.dbSet('rules',n).catch(e=>T('❌ '+e.message));}
 function renderAOrgList(){
   document.getElementById('aOrgList').innerHTML=ORGS.length?
     ORGS.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:8px 11px">
@@ -2286,13 +2298,16 @@ function openOrgModal(id){
   OM('orgModal');
 }
 function editOrg(id){openOrgModal(id);}
-function delOrg(id){FDB.dbDel('orgs/'+id);T('Organiser deleted');}
+function delOrg(id){FDB.dbDel('orgs/'+id).then(()=>T('Organiser deleted')).catch(e=>T('❌ '+e.message));}
 function saveOrg(){
   const id=document.getElementById('orgEId').value;
   const name=document.getElementById('orgName').value.trim();
   if(!name){T('Enter name');return;}
+  if(!FDB){T('Not connected');return;}
   const obj={name,role:document.getElementById('orgRole').value.trim(),emoji:document.getElementById('orgEmoji').value.trim()||'👤',since:document.getElementById('orgSince').value.trim()};
-  FDB.dbSet('orgs/'+(id||UID()),obj); CM('orgModal'); T(id?'✅ Updated':'✅ Organiser added');
+  FDB.dbSet('orgs/'+(id||UID()),obj)
+    .then(()=>{ CM('orgModal'); T(id?'✅ Updated':'✅ Organiser added'); })
+    .catch(e=>{ T('❌ Error: '+e.message); });
 }
 
 // ═══════════════════════════════════════════════════
@@ -2478,128 +2493,81 @@ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch
 <script>
 (function(){
   var BASE = "https://ppl2206-default-rtdb.asia-southeast1.firebasedatabase.app";
-  var st = document.getElementById('splStatus');
-  function setStatus(m){ if(st) st.textContent = m; console.log('[PPL]', m); }
 
-  // ─── Check if running on file:// (local) ───────────────────────────────────
-  // Firebase REST blocks requests from file:// due to CORS.
-  // Must be served via http/https. On Render this works fine.
-  if(location.protocol === 'file:'){
-    setStatus('⚠️ Cannot connect from file://  — serve via Python or Render');
-    console.warn('[PPL] Running on file:// — Firebase REST API requires http/https hosting. Run: python -m http.server 8080 or deploy to Render.');
-    // Boot app in offline mode so UI is visible
-    FDB = makeFallbackDB();
-    setupListeners();
-    return;
+  // ─── URL builder ───
+  function url(p){
+    return BASE+"/"+String(p||"").replace(/^\/+/,"").replace(/\/+$/,"")+".json";
   }
 
-  // ─── URL builder ────────────────────────────────────────────────────────────
-  function url(path){
-    var p = String(path||'').replace(/^\/+/,'').replace(/\/+$/,'');
-    return BASE + (p ? '/'+p : '') + ".json";
+  // ─── Core fetch ───
+  function go(path,opts){
+    return fetch(url(path),opts||{}).then(function(r){
+      if(r.status===401||r.status===403) throw new Error("PERMISSION_DENIED – check Firebase Rules");
+      if(!r.ok) throw new Error("HTTP_"+r.status);
+      return r.json();
+    });
   }
+  function dbGet(p)   { return go(p); }
+  function dbSet(p,v) { return go(p,{method:"PUT",  headers:{"Content-Type":"application/json"},body:JSON.stringify(v==null?null:v)}); }
+  function dbUpd(p,v) { return go(p,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}); }
+  function dbDel(p)   { return fetch(url(p),{method:"DELETE"}).then(function(){return true;}); }
+  function dbPush(p,v){ return go(p,{method:"POST", headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}); }
 
-  // ─── Core fetch ─────────────────────────────────────────────────────────────
-  function go(path, opts){
-    var u = url(path);
-    return fetch(u, opts||{})
-      .then(function(r){
-        if(r.status===401||r.status===403){
-          throw new Error('RULES_DENIED:'+r.status);
-        }
-        if(!r.ok){ throw new Error('HTTP_'+r.status); }
-        return r.json();
-      });
-  }
-
-  function dbGet(path)   { return go(path); }
-  function dbSet(path,v) { return go(path,{method:'PUT', headers:{'Content-Type':'application/json'},body:JSON.stringify(v==null?null:v)}); }
-  function dbUpd(path,v) { return go(path,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(v)}); }
-  function dbDel(path)   { return fetch(url(path),{method:'DELETE'}).then(function(){return true;}); }
-  function dbPush(path,v){ return go(path,{method:'POST', headers:{'Content-Type':'application/json'},body:JSON.stringify(v)}); }
-
-  // ─── Real-time: SSE + polling fallback ──────────────────────────────────────
+  // ─── Real-time: SSE + 4s polling fallback ───
   var sources={}, polls={};
   function dbListen(path,cb){
+    // immediate fetch
     dbGet(path).then(cb).catch(function(){});
+    // SSE stream — Firebase REST supports EventSource
     try{
-      var es = new EventSource(url(path));
-      es.addEventListener('put',function(e){
+      var es=new EventSource(url(path));
+      es.addEventListener("put",function(e){
         try{ var d=JSON.parse(e.data); cb(d.data); }catch(_){}
       });
-      es.addEventListener('patch',function(){ dbGet(path).then(cb).catch(function(){}); });
+      es.addEventListener("patch",function(){
+        dbGet(path).then(cb).catch(function(){});
+      });
       es.onerror=function(){
         es.close(); delete sources[path];
-        if(!polls[path]) polls[path]=setInterval(function(){ dbGet(path).then(cb).catch(function(){}); },5000);
+        if(!polls[path]) polls[path]=setInterval(function(){dbGet(path).then(cb).catch(function(){});},4000);
       };
       sources[path]=es;
     }catch(_){
-      polls[path]=setInterval(function(){ dbGet(path).then(cb).catch(function(){}); },5000);
+      polls[path]=setInterval(function(){dbGet(path).then(cb).catch(function(){});},4000);
     }
   }
-  function dbOff(path){
-    if(sources[path]){sources[path].close();delete sources[path];}
-    if(polls[path]){clearInterval(polls[path]);delete polls[path];}
-  }
-
-  // ─── Fallback DB (offline / local mode) ─────────────────────────────────────
-  function makeFallbackDB(){
-    console.warn('[PPL] Running in offline mode — data not saved to Firebase');
-    var cache={};
-    return {
-      dbGet:function(p){ return Promise.resolve(cache[p]||null); },
-      dbSet:function(p,v){ cache[p]=v; return Promise.resolve(v); },
-      dbUpd:function(p,v){ cache[p]=Object.assign(cache[p]||{},v); return Promise.resolve(); },
-      dbDel:function(p){ delete cache[p]; return Promise.resolve(); },
-      dbPush:function(p,v){ var k='id'+Date.now(); if(!cache[p])cache[p]={}; cache[p][k]=v; return Promise.resolve({name:k}); },
-      dbListen:function(p,cb){ cb(cache[p]||null); },
-      dbOff:function(){}
-    };
+  function dbOff(p){
+    if(sources[p]){sources[p].close();delete sources[p];}
+    if(polls[p]){clearInterval(polls[p]);delete polls[p];}
   }
 
   window.DB={dbGet:dbGet,dbSet:dbSet,dbUpd:dbUpd,dbDel:dbDel,dbPush:dbPush,dbListen:dbListen,dbOff:dbOff};
 
-  // ─── Boot: ping Firebase ─────────────────────────────────────────────────────
-  setStatus('Connecting to Firebase…');
+  // ─── Boot: ping then start ───
+  var st=document.getElementById("splStatus");
+  if(st) st.textContent="Loading PPL 2026…";
 
-  fetch(BASE + "/ppl_ping.json", {method:'GET'})
-    .then(function(r){
-      console.log('[PPL] Firebase ping →', r.status);
-      if(r.status===200){
-        r.json().then(function(){
-          var dot=document.getElementById('syncDot');
-          if(dot){dot.style.display='inline-block';dot.style.background='#00ff88';}
-          setStatus('✅ Firebase connected!');
-          FDB = window.DB;
-          setupListeners();
-        });
-      } else if(r.status===401||r.status===403){
-        r.text().then(function(t){
-          setStatus('❌ Firebase Rules still blocking ('+r.status+'). Make sure you published the rules in Firebase Console.');
-          console.error('[PPL] Rules error:', t);
-        });
-      } else {
-        setStatus('❌ Unexpected HTTP '+r.status);
-      }
-    })
-    .catch(function(e){
-      // "Failed to fetch" on Render usually means a Render CSP header is blocking the request.
-      // Fix: add Access-Control-Allow-Origin header override in render.yaml, OR
-      // the request is being blocked by browser CORS — Firebase returns CORS headers so this should not happen on https.
-      console.error('[PPL] fetch error:', e.name, e.message, 'origin:', location.origin, 'protocol:', location.protocol);
-      setStatus('❌ Fetch blocked. Checking CORS…');
+  fetch(url("ppl_ping")).then(function(r){
+    if(r.status===200||r.status===204){
+      boot();
+    } else if(r.status===401||r.status===403){
+      if(st) st.textContent="❌ Firebase Rules: set read+write to true and Publish";
+    } else {
+      // Try anyway — some Firebase setups return 404 for empty nodes  
+      boot();
+    }
+  }).catch(function(){
+    // CORS or network — try booting anyway, dbListen will handle errors
+    boot();
+  });
 
-      // Last resort: try with no-cors mode to at least confirm network is up
-      fetch(BASE + "/ppl_ping.json", {method:'GET', mode:'no-cors'})
-        .then(function(){
-          // Got an opaque response — network is up but CORS is blocking
-          setStatus('❌ CORS blocked. This usually means the app is not on https. Make sure you opened the Render https:// URL, not a local file.');
-          console.error('[PPL] CORS blocked — opaque response. Origin:', location.origin);
-        })
-        .catch(function(e2){
-          setStatus('❌ Network down: '+e2.message+'. Check your internet connection.');
-        });
-    });
+  function boot(){
+    var dot=document.getElementById("syncDot");
+    if(dot){dot.style.display="inline-block";dot.style.background="#00ff88";}
+    if(st) st.textContent="✅ Connected";
+    FDB=window.DB;
+    setupListeners();
+  }
 })();
 </script>
 </body>
