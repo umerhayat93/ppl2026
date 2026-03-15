@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PPL 2026">
+<meta name="description" content="Pattan Premier League 2026 – Official Tournament App">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>PPL 2026 – Pattan Premier League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+
+<!-- No external SDK needed — uses Firebase REST API via fetch() -->
+
+<style>
+:root{
+  --gold:#f0c040;--gl:#ffd966;--gd:#c8960a;
+  --deep:#040810;--dk:#0a0f1e;--d2:#0f1628;--d3:#161f38;--d4:#1e2a4a;
+  --ac:#00d4ff;--ac2:#00ff88;--red:#ff3b5c;--or:#ff8c00;
+  --tx:#e8eaf0;--dm:#8892b0;--mt:#4a5568;
+  --b1:rgba(240,192,64,.15);--b2:rgba(240,192,64,.3);--r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:'Rajdhani',sans-serif;background:var(--deep);color:var(--tx);overflow-x:hidden;min-height:100vh}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--dk)}
+::-webkit-scrollbar-thumb{background:var(--gd);border-radius:2px}
+
+/* SPLASH */
+#spl{position:fixed;inset:0;z-index:9999;background:var(--deep);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,transform .6s}
+#spl.out{opacity:0;pointer-events:none;transform:scale(1.06)}
+.slogo{width:110px;height:110px;background:radial-gradient(circle at 38% 38%,#ffd966,#c8960a);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:2.1rem;color:var(--deep);box-shadow:0 0 70px rgba(240,192,64,.55);animation:sp 1.5s ease-in-out infinite;position:relative}
+.slogo::after{content:'🏏';position:absolute;bottom:-4px;right:-4px;font-size:1.8rem;filter:drop-shadow(0 0 8px rgba(240,192,64,.8))}
+@keyframes sp{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.stitle{font-family:'Bebas Neue';font-size:2.5rem;color:var(--gold);margin-top:18px;letter-spacing:3px}
+.ssub{font-size:.8rem;color:var(--dm);letter-spacing:4px;text-transform:uppercase;margin-top:5px}
+.sbar{width:180px;height:2px;background:var(--d3);border-radius:2px;margin-top:36px;overflow:hidden}
+.sfill{height:100%;background:linear-gradient(90deg,var(--gd),var(--gl));animation:lb 2.2s ease forwards}
+@keyframes lb{from{width:0}to{width:100%}}
+.spl-status{font-size:.7rem;color:var(--mt);margin-top:12px;letter-spacing:2px}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.vis{display:flex}
+
+/* TICKER */
+.ticker{background:rgba(240,192,64,.07);border-bottom:1px solid var(--b1);height:30px;display:flex;align-items:center;overflow:hidden}
+.tk-lbl{background:var(--gold);color:var(--deep);font-family:'Bebas Neue';font-size:.77rem;letter-spacing:1px;padding:0 11px;height:100%;display:flex;align-items:center;flex-shrink:0}
+.tk-wrap{overflow:hidden;flex:1;height:100%}
+.tk-track{display:flex;align-items:center;height:100%;white-space:nowrap;animation:ts 30s linear infinite}
+.tk-track:hover{animation-play-state:paused}
+.tk-item{font-size:.71rem;color:var(--gl);padding:0 22px;display:inline-flex;align-items:center;gap:6px}
+.tk-dot{width:4px;height:4px;border-radius:50%;background:var(--gd);flex-shrink:0}
+@keyframes ts{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* HEADER */
+.hdr{background:rgba(4,8,16,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--b1);padding:0 14px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.hbrand{display:flex;align-items:center;gap:10px}
+.hlogo{width:34px;height:34px;background:radial-gradient(circle at 35% 35%,var(--gl),var(--gd));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:1rem;color:var(--deep);flex-shrink:0}
+.htitle{font-family:'Bebas Neue';font-size:1.3rem;color:var(--gold);letter-spacing:1px;line-height:1}
+.hsub{font-size:.6rem;color:var(--dm);letter-spacing:2px}
+.hacts{display:flex;align-items:center;gap:8px}
+.hbtn{width:34px;height:34px;border-radius:8px;background:var(--d3);border:1px solid var(--b1);color:var(--dm);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:.95rem}
+.hbtn:hover{border-color:var(--gold);color:var(--gold)}
+.lbadge{background:var(--red);color:#fff;font-size:.57rem;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:4px;animation:lp 1.5s ease-in-out infinite;display:none}
+.lbadge.show{display:inline-block}
+@keyframes lp{0%,100%{opacity:1;box-shadow:0 0 8px rgba(255,59,92,.6)}50%{opacity:.7;box-shadow:0 0 16px rgba(255,59,92,.9)}}
+
+/* NAV */
+.nav{background:var(--dk);border-bottom:1px solid var(--b1);overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.ntabs{display:inline-flex;padding:0 6px;gap:1px}
+.ntab{padding:10px 13px;font-family:'Rajdhani';font-size:.8rem;font-weight:600;color:var(--dm);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;letter-spacing:.4px;text-transform:uppercase}
+.ntab:hover{color:var(--tx)}
+.ntab.on{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* PAGES */
+.content{flex:1;padding-bottom:24px}
+.pg{display:none;animation:fu .3s ease}
+.pg.on{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--dk) 0%,var(--d2) 50%,var(--d3) 100%);padding:22px 16px 20px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;right:-15%;width:380px;height:380px;background:radial-gradient(circle,rgba(240,192,64,.09) 0%,transparent 70%);pointer-events:none}
+.hero::after{content:'🏏';position:absolute;right:14px;top:14px;font-size:5rem;opacity:.05;pointer-events:none}
+.tbadge{display:inline-flex;align-items:center;gap:6px;background:rgba(240,192,64,.1);border:1px solid var(--b2);padding:4px 12px;border-radius:20px;font-size:.66rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:11px}
+.htit{font-family:'Bebas Neue';font-size:2.7rem;line-height:.93;color:#fff;letter-spacing:1px}
+.htit span{color:var(--gold)}
+.hmeta{font-size:.8rem;color:var(--dm);margin-top:8px}
+.hmeta strong{color:var(--gl)}
+.hstats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:18px}
+.hsi{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:10px;padding:9px 6px;text-align:center}
+.hsn{font-family:'Orbitron';font-size:1.2rem;color:var(--gold);font-weight:700}
+.hsl{font-size:.58rem;color:var(--dm);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+/* SECTION TITLE */
+.stit{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px}
+.stit h2{font-family:'Bebas Neue';font-size:1.35rem;color:var(--tx);letter-spacing:1px}
+.stit h2 span{color:var(--gold)}
+.smore{font-size:.7rem;color:var(--gold);cursor:pointer;letter-spacing:1px}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px}
+.empty-ic{font-size:3rem;margin-bottom:12px;opacity:.3}
+.empty-tx{color:var(--mt);font-size:.84rem;line-height:1.7}
+.empty-tx strong{color:var(--dm)}
+
+/* STATUS PILLS */
+.spill{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:11px;font-size:.59rem;font-weight:700;letter-spacing:.4px;white-space:nowrap;border:1px solid}
+.s-upcoming{background:rgba(0,212,255,.1);color:var(--ac);border-color:rgba(0,212,255,.2)}
+.s-live{background:rgba(255,59,92,.1);color:var(--red);border-color:rgba(255,59,92,.3);animation:lp 1.5s infinite}
+.s-completed{background:rgba(0,255,136,.1);color:var(--ac2);border-color:rgba(0,255,136,.2)}
+.s-rain{background:rgba(0,150,255,.1);color:#4db8ff;border-color:rgba(0,150,255,.25)}
+.s-stopped{background:rgba(255,140,0,.1);color:var(--or);border-color:rgba(255,140,0,.25)}
+.s-postponed{background:rgba(155,89,182,.1);color:#c39bd3;border-color:rgba(155,89,182,.25)}
+.s-cancelled{background:rgba(100,100,100,.1);color:#888;border-color:rgba(100,100,100,.2)}
+
+/* LIVE CARD */
+.lcard{margin:14px;background:linear-gradient(135deg,#0a1628,#111d3a);border:1px solid rgba(240,192,64,.4);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4),0 0 40px rgba(240,192,64,.08)}
+.lc-h{background:rgba(240,192,64,.08);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b1)}
+.lc-b{padding:14px 16px}
+.lc-score-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;text-align:center}
+.lct-n{font-family:'Bebas Neue';font-size:1.05rem;color:var(--tx);letter-spacing:1px}
+.lct-s{font-family:'Orbitron';font-size:1.9rem;color:var(--gold);font-weight:900;line-height:1}
+.lct-ov{font-size:.65rem;color:var(--dm);margin-top:2px}
+.lct-s.dim{font-size:1.2rem;color:var(--mt)}
+.lcvs{font-family:'Bebas Neue';font-size:1.1rem;color:var(--mt)}
+.lc-stats{display:flex;justify-content:center;gap:18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1)}
+.lcst{text-align:center}
+.lcst-v{font-family:'Orbitron';font-size:.83rem;color:var(--ac)}
+.lcst-l{font-size:.58rem;color:var(--mt);text-transform:uppercase;letter-spacing:1px}
+.batter-row{display:flex;gap:8px;margin-top:10px}
+.bat-box{flex:1;background:rgba(255,255,255,.03);border-radius:8px;padding:9px 10px;border:1px solid var(--b1)}
+.bat-box.str{border-color:rgba(240,192,64,.35);background:rgba(240,192,64,.05)}
+.bat-name{font-size:.8rem;font-weight:700;color:var(--tx);display:flex;align-items:center;gap:5px}
+.bat-score{font-family:'Orbitron';font-size:.85rem;color:var(--gold);margin-top:2px}
+.bat-detail{font-size:.62rem;color:var(--dm);margin-top:1px}
+.ball-row{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--b1)}
+.ball-dot{width:26px;height:26px;border-radius:50%;background:var(--d3);border:1px solid var(--b1);display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0}
+
+/* TODAY POSTER */
+.tposter{margin:14px;background:linear-gradient(135deg,#0d1f0d,#182b18);border:1px solid rgba(0,255,136,.22);border-radius:16px;overflow:hidden;position:relative}
+.tposter::before{content:'TODAY';position:absolute;top:11px;left:-18px;background:var(--ac2);color:var(--deep);font-family:'Bebas Neue';font-size:.72rem;letter-spacing:2px;padding:4px 28px;transform:rotate(-45deg);font-weight:900;z-index:1}
+.tp-h{background:rgba(0,255,136,.06);padding:10px 16px;border-bottom:1px solid rgba(0,255,136,.1);display:flex;justify-content:space-between;align-items:center}
+.tp-b{padding:14px}
+.tp-teams{display:flex;align-items:center;justify-content:space-around;margin-top:8px}
+.tp-t{text-align:center}
+.tp-emoji{font-size:2.4rem}
+.tp-name{font-family:'Bebas Neue';font-size:1.1rem;color:var(--tx);letter-spacing:1px;margin-top:4px}
+.tp-vs{font-family:'Bebas Neue';font-size:1.8rem;color:var(--gold);opacity:.55}
+.tp-info{display:flex;justify-content:center;gap:14px;margin-top:11px;padding-top:11px;border-top:1px solid rgba(0,255,136,.1);font-size:.73rem;color:var(--dm)}
+
+/* COUNTDOWN */
+.cdcard{margin:0 14px 14px;background:var(--d2);border:1px solid var(--b1);border-radius:var(--r);padding:14px}
+.cdtit{font-size:.66rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:9px}
+.cdtimer{display:flex;gap:7px;justify-content:center}
+.cdu{text-align:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:9px 13px}
+.cdv{font-family:'Orbitron';font-size:1.4rem;color:var(--gold);font-weight:700}
+.cdl{font-size:.58rem;color:var(--mt);text-transform:uppercase;letter-spacing:1px}
+
+/* HOT PLAYER */
+.hotcard{margin:0 14px 14px;background:linear-gradient(135deg,#1a0a0a,#2a1010);border:1px solid rgba(255,100,50,.3);border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.hotcard::before{content:'🔥';position:absolute;right:-8px;top:-8px;font-size:5.5rem;opacity:.07}
+.hotav{width:58px;height:58px;border-radius:12px;background:linear-gradient(135deg,#ff6432,#c83200);display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0;box-shadow:0 0 20px rgba(255,100,50,.3)}
+.hotbadge{font-size:.6rem;color:#ff6432;letter-spacing:2px;font-weight:700;text-transform:uppercase}
+.hotname{font-family:'Bebas Neue';font-size:1.35rem;color:#fff;letter-spacing:1px;line-height:1.1}
+.hotteam{font-size:.7rem;color:var(--dm)}
+.hotstats{display:flex;gap:10px;margin-top:5px;flex-wrap:wrap}
+.hsv{font-family:'Orbitron';font-size:.83rem;color:#ff9966;font-weight:700}
+.hsl2{font-size:.58rem;color:var(--mt);text-transform:uppercase}
+
+/* QUICK CARDS */
+.cgrid{padding:0 14px;display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.icard{background:var(--d2);border:1px solid var(--b1);border-radius:var(--r);padding:13px;cursor:pointer;transition:all .2s}
+.icard:hover{border-color:var(--b2);background:var(--d3)}
+.ic-ic{font-size:1.5rem;margin-bottom:6px}
+.ic-t{font-size:.86rem;font-weight:700;color:var(--tx)}
+.ic-s{font-size:.66rem;color:var(--dm);margin-top:1px}
+
+/* INSTALL */
+.ibar{margin:0 14px 14px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:9px}
+.itxt{flex:1;font-size:.77rem;color:var(--dm)}
+.itxt strong{color:var(--tx)}
+.icta{font-size:.72rem;color:var(--ac);font-weight:600;white-space:nowrap;cursor:pointer}
+
+/* SCHEDULE */
+.sch-banner{margin:14px;background:linear-gradient(135deg,rgba(240,192,64,.14),rgba(240,192,64,.04));border:1px solid var(--b2);border-radius:16px;padding:20px;text-align:center}
+.sch-t{font-family:'Bebas Neue';font-size:2rem;color:var(--gold);letter-spacing:3px}
+.sch-s{font-size:.73rem;color:var(--dm);letter-spacing:2px;margin-top:3px}
+.stage-sec{margin:0 14px 16px}
+.stage-h{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--d3);border-radius:12px 12px 0 0;border:1px solid var(--b2);border-bottom:none}
+.stage-ic{font-size:1.05rem}
+.stage-nm{font-family:'Bebas Neue';font-size:1.05rem;color:var(--gold);letter-spacing:1px}
+.stage-ct{font-size:.67rem;color:var(--mt);margin-left:auto;background:var(--d4);padding:2px 8px;border-radius:9px}
+.stbl{width:100%;border-collapse:collapse;background:var(--d2);border:1px solid var(--b1);border-top:none;border-radius:0 0 12px 12px;overflow:hidden}
+.stbl th{background:var(--d3);padding:8px 9px;font-size:.59rem;color:var(--dm);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1);font-weight:600;text-align:center}
+.stbl th.la{text-align:left}
+.stbl td{padding:9px 9px;border-bottom:1px solid rgba(240,192,64,.05);font-size:.8rem;vertical-align:middle}
+.stbl tr:last-child td{border-bottom:none}
+.stbl tr:hover td{background:rgba(240,192,64,.025)}
+.msno{width:26px;height:26px;border-radius:50%;background:var(--d3);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:.67rem;font-weight:600;color:var(--mt);margin:0 auto}
+.msno.lv{background:rgba(255,59,92,.15);border-color:rgba(255,59,92,.4);color:var(--red)}
+.tvs{display:flex;flex-direction:column;gap:2px}
+.tv1{font-weight:700;color:var(--tx);font-size:.84rem}
+.tvsep{font-size:.62rem;color:var(--mt);letter-spacing:.8px}
+.tv2{font-weight:700;color:var(--dm);font-size:.8rem}
+.tvscore{font-size:.64rem;color:var(--gold);margin-top:2px;font-family:'Orbitron'}
+.tvres{font-size:.65rem;color:var(--ac2);margin-top:2px;font-weight:600}
+.tvnote{font-size:.64rem;color:var(--or);margin-top:2px}
+.tvhl{font-size:.61rem;color:var(--gold);margin-top:2px}
+.tvhlb{font-size:.61rem;color:var(--red);margin-top:1px}
+.dtc{display:flex;flex-direction:column;gap:1px}
+.dtdate{font-size:.77rem;color:var(--tx);font-weight:600}
+.dttime{font-size:.67rem;color:var(--gold);font-family:'Orbitron'}
+.dtyear{font-size:.6rem;color:var(--mt)}
+.venue{font-size:.7rem;color:var(--dm);max-width:90px;line-height:1.3}
+
+/* GROUPS / POINTS */
+.gcon{padding:0 14px}
+.gcard{margin-bottom:16px;border-radius:14px;overflow:hidden;border:1px solid var(--b1)}
+.gcard-h{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--b1)}
+.gcn{font-family:'Bebas Neue';font-size:1.18rem;letter-spacing:1px}
+.gcct{font-size:.63rem;color:var(--mt);background:var(--d3);padding:2px 9px;border-radius:9px}
+.gtbl{width:100%;border-collapse:collapse;background:var(--d2)}
+.gtbl th{background:var(--d3);padding:8px 9px;font-size:.58rem;color:var(--gold);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b2);text-align:center}
+.gtbl th.la{text-align:left}
+.gtbl td{padding:9px;text-align:center;border-bottom:1px solid rgba(240,192,64,.05);font-size:.79rem;color:var(--dm)}
+.gtbl tr:hover td{background:rgba(240,192,64,.025)}
+.gtbl tr:last-child td{border-bottom:none}
+.gtbl td.la{text-align:left}
+.grnk{width:22px;height:22px;border-radius:50%;background:var(--d3);display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:600;color:var(--mt)}
+.grnk.q{background:rgba(240,192,64,.15);color:var(--gold);border:1px solid var(--b2)}
+.grnk.e{background:rgba(255,59,92,.1);color:var(--red)}
+.gteam{font-weight:700;color:var(--tx);display:flex;align-items:center;gap:5px}
+.gpts{font-family:'Orbitron';font-size:.88rem;color:var(--gold);font-weight:700}
+.np{color:var(--ac2)}.nn{color:var(--red)}.nz{color:var(--dm)}
+.qdot{width:5px;height:5px;border-radius:50%;background:var(--ac2);margin-left:3px;display:inline-block}
+
+.ptbl{width:100%;border-collapse:collapse;background:var(--d2);border-radius:10px;overflow:hidden;border:1px solid var(--b1);margin-bottom:16px}
+.ptbl th{background:var(--d3);padding:8px;font-size:.58rem;color:var(--gold);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b2);text-align:center}
+.ptbl th.la{text-align:left}
+.ptbl td{padding:8px;text-align:center;border-bottom:1px solid rgba(240,192,64,.05);font-size:.78rem;color:var(--dm)}
+.ptbl td.la{text-align:left}
+.ptbl tr:last-child td{border-bottom:none}
+.ptbl tr:hover td{background:rgba(240,192,64,.025)}
+
+/* TEAMS */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 14px}
+.tcard{background:var(--d2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;text-align:center;position:relative;overflow:hidden}
+.tcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gd),var(--gl))}
+.tce{font-size:2.2rem;margin-bottom:7px}
+.tcn{font-family:'Bebas Neue';font-size:1.04rem;color:var(--tx);letter-spacing:1px}
+.tcc{font-size:.67rem;color:var(--dm);margin-top:2px}
+.tcb{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.58rem;font-weight:600;letter-spacing:1px;margin-top:7px;text-transform:uppercase;border:1px solid}
+
+/* PLAYERS */
+.pfilt{display:flex;gap:7px;padding:11px 14px;overflow-x:auto;scrollbar-width:none}
+.pfilt::-webkit-scrollbar{display:none}
+.fbtn{padding:5px 13px;border-radius:20px;border:1px solid var(--b1);background:transparent;color:var(--dm);font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;font-family:'Rajdhani'}
+.fbtn.on{background:rgba(240,192,64,.15);color:var(--gold);border-color:var(--b2)}
+.plist{padding:0 14px;display:flex;flex-direction:column;gap:7px}
+.prow{display:flex;align-items:center;gap:11px;background:var(--d2);border:1px solid var(--b1);border-radius:var(--r);padding:11px}
+.prow:hover{border-color:var(--b2)}
+.prnk{width:26px;text-align:center;font-family:'Orbitron';font-size:.76rem;color:var(--mt);flex-shrink:0}
+.prav{width:40px;height:40px;border-radius:9px;background:linear-gradient(135deg,var(--d3),var(--d4));border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.pinfo{flex:1;min-width:0}
+.pname{font-size:.86rem;font-weight:700;color:var(--tx)}
+.ptr{font-size:.67rem;color:var(--dm)}
+.psts{display:flex;gap:10px}
+.psv{font-family:'Orbitron';font-size:.79rem;font-weight:700}
+.psv.rn{color:var(--gold)}.psv.wk{color:var(--red)}.psv.be{color:var(--ac)}
+.psl{font-size:.57rem;color:var(--mt);text-transform:uppercase}
+
+/* POLLS */
+.pollist{padding:0 14px;display:flex;flex-direction:column;gap:11px}
+.polcard{background:var(--d2);border:1px solid var(--b1);border-radius:14px;overflow:hidden}
+.polh{padding:12px 14px;border-bottom:1px solid var(--b1)}
+.poltype{font-size:.61rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;font-weight:600;margin-bottom:3px}
+.polq{font-size:.93rem;font-weight:700;color:var(--tx)}
+.polopts{padding:11px 14px;display:flex;flex-direction:column;gap:7px}
+.polopt{border-radius:7px;overflow:hidden;cursor:pointer;border:1px solid var(--b1);background:var(--d3);position:relative;transition:all .2s}
+.polopt:hover{border-color:var(--b2)}
+.polopt.vd{border-color:var(--gold)}
+.polofill{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,rgba(240,192,64,.13),rgba(240,192,64,.05));transition:width .6s ease}
+.polocon{position:relative;padding:9px 11px;display:flex;justify-content:space-between;align-items:center}
+.polotx{font-size:.86rem;font-weight:600;color:var(--tx)}
+.polpct{font-family:'Orbitron';font-size:.77rem;color:var(--gold)}
+.polftr{padding:6px 14px 11px;display:flex;justify-content:space-between;font-size:.65rem;color:var(--mt)}
+
+/* MEDIA / ORG / RULES */
+.mgrid{padding:0 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.mitem{aspect-ratio:1;background:var(--d3);border-radius:6px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:2.2rem;position:relative;border:1px solid var(--b1)}
+.mlbl{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.72));padding:7px 5px 4px;font-size:.58rem;color:#fff;text-align:center}
+.orglist{padding:0 14px;display:flex;flex-direction:column;gap:7px}
+.orgcard{display:flex;align-items:center;gap:11px;background:var(--d2);border:1px solid var(--b1);border-radius:var(--r);padding:12px}
+.orgav{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--d3),var(--d4));border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.orgn{font-size:.9rem;font-weight:700;color:var(--tx)}
+.orgr{font-size:.7rem;color:var(--gold);margin-top:1px}
+.orgs{font-size:.64rem;color:var(--mt);margin-top:1px}
+.rlist{padding:0 14px;display:flex;flex-direction:column;gap:7px}
+.ritem{display:flex;gap:11px;align-items:flex-start;background:var(--d2);border:1px solid var(--b1);border-radius:var(--r);padding:12px}
+.rnum{width:26px;height:26px;border-radius:7px;background:rgba(240,192,64,.1);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-family:'Orbitron';font-size:.64rem;color:var(--gold);flex-shrink:0;margin-top:1px}
+.rtxt{font-size:.84rem;color:var(--tx);line-height:1.5}
+.rtxt strong{color:var(--gl)}
+
+/* ABOUT */
+.abcard{margin:0 14px 12px;background:linear-gradient(135deg,var(--d2),var(--d3));border:1px solid var(--b1);border-radius:16px;padding:20px;text-align:center}
+.ablogo{width:76px;height:76px;border-radius:18px;background:radial-gradient(circle at 35% 35%,var(--gl),var(--gd));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:1.7rem;color:var(--deep);margin:0 auto 11px;box-shadow:0 8px 28px rgba(240,192,64,.3)}
+.abt{font-family:'Bebas Neue';font-size:1.9rem;color:var(--gold);letter-spacing:2px}
+.abs{font-size:.8rem;color:var(--dm);margin-top:3px}
+.abd{font-size:.84rem;color:var(--dm);line-height:1.6;margin-top:14px;text-align:left}
+.abgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
+.abitem{background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:8px;padding:9px;text-align:left}
+.ablbl{font-size:.6rem;color:var(--mt);text-transform:uppercase;letter-spacing:1px}
+.abval{font-size:.86rem;font-weight:600;color:var(--tx);margin-top:1px}
+
+/* FOOTER */
+.ftr{text-align:center;padding:18px 14px;border-top:1px solid var(--b1)}
+.ftrl{font-family:'Bebas Neue';font-size:.92rem;color:var(--gold);letter-spacing:2px}
+.ftrt{font-size:.66rem;color:var(--mt);margin-top:2px}
+
+/* MODAL */
+.movl{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);align-items:flex-start;justify-content:center;padding-top:20px;overflow-y:auto}
+.movl.open{display:flex}
+.mbox{background:var(--d2);border:1px solid var(--b2);border-radius:20px;width:94%;max-width:480px;margin-bottom:20px;box-shadow:0 20px 60px rgba(0,0,0,.65),0 0 30px rgba(240,192,64,.15)}
+.mhdr{background:var(--d2);padding:17px 18px;border-bottom:1px solid var(--b2);display:flex;justify-content:space-between;align-items:center;border-radius:20px 20px 0 0;position:sticky;top:0;z-index:1}
+.mtit{font-family:'Bebas Neue';font-size:1.25rem;color:var(--gold);letter-spacing:2px}
+.mclose{background:var(--d3);border:1px solid var(--b1);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--dm);font-size:.88rem}
+.mbody{padding:17px}
+
+/* FORM */
+.fr{margin-bottom:12px}
+.fl{display:block;font-size:.7rem;color:var(--dm);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.fi{width:100%;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'Rajdhani';font-size:.88rem;transition:border-color .2s;outline:none}
+.fi:focus{border-color:var(--gold)}
+.fsel{width:100%;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'Rajdhani';font-size:.88rem;outline:none;cursor:pointer}
+.fsel:focus{border-color:var(--gold)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.btnp{background:linear-gradient(135deg,var(--gd),var(--gold));border:none;border-radius:8px;color:var(--deep);font-family:'Bebas Neue';font-size:.98rem;letter-spacing:2px;padding:11px 18px;cursor:pointer;transition:opacity .2s;width:100%}
+.btnp:hover{opacity:.9}
+.btns{background:var(--d3);border:1px solid var(--b1);border-radius:8px;color:var(--dm);font-family:'Rajdhani';font-size:.82rem;font-weight:600;padding:8px 14px;cursor:pointer;transition:all .2s}
+.btns:hover{border-color:var(--b2);color:var(--tx)}
+.btnd{background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.3);border-radius:7px;color:var(--red);font-family:'Rajdhani';font-size:.8rem;font-weight:600;padding:6px 12px;cursor:pointer}
+.btnd:hover{background:rgba(255,59,92,.2)}
+
+/* SQUAD SELECTOR (live scoring) */
+.squad-selector{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.squad-btn{padding:5px 11px;border-radius:7px;border:1px solid var(--b1);background:var(--d3);color:var(--dm);font-family:'Rajdhani';font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s}
+.squad-btn:hover{border-color:var(--b2);color:var(--tx)}
+.squad-btn.sel-bat{background:rgba(240,192,64,.15);border-color:var(--b2);color:var(--gold)}
+.squad-btn.sel-bowl{background:rgba(255,59,92,.12);border-color:rgba(255,59,92,.3);color:var(--red)}
+.squad-btn.out{background:rgba(100,100,100,.1);color:var(--mt);text-decoration:line-through}
+
+/* ADMIN */
+.adash{padding:14px;display:none}
+.alogf{padding:16px}
+.asec{margin-bottom:18px}
+.asectit{font-family:'Bebas Neue';font-size:.98rem;color:var(--gold);letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid var(--b1);padding-bottom:5px}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.aact{background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:11px;text-align:center;cursor:pointer;transition:all .2s}
+.aact:hover{border-color:var(--b2);background:var(--d4)}
+.aact-ic{font-size:1.3rem;margin-bottom:3px}
+.aact-tx{font-size:.7rem;color:var(--dm);font-weight:600}
+
+/* SCORE PAD */
+.spad{display:grid;gap:7px;margin-bottom:10px}
+.srow{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.sbtn{width:52px;height:52px;border-radius:10px;background:var(--d3);border:1px solid var(--b1);color:var(--tx);font-family:'Orbitron';font-size:1rem;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.sbtn:active{transform:scale(.92)}
+.sbtn.run{border-color:rgba(0,212,255,.3);color:var(--ac)}
+.sbtn.four{background:rgba(240,192,64,.1);border-color:var(--b2);color:var(--gold)}
+.sbtn.six{background:rgba(0,255,136,.1);border-color:rgba(0,255,136,.3);color:var(--ac2)}
+.sbtn.wide{background:rgba(255,100,50,.1);border-color:rgba(255,100,50,.3);color:#ff6432;font-size:.62rem}
+.sbtn.wkt{background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.3);color:var(--red);font-size:.62rem}
+.lsd{background:var(--d3);border:1px solid var(--b2);border-radius:10px;padding:12px;text-align:center;margin-bottom:10px}
+.lsds{font-family:'Orbitron';font-size:1.9rem;color:var(--gold);font-weight:900}
+.lsdo{font-size:.72rem;color:var(--dm);margin-top:2px}
+.live-batter-disp{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.lbd-row{padding:8px 10px;border-radius:7px;font-size:.78rem;display:flex;justify-content:space-between;align-items:center}
+.lbd-row.str{background:rgba(240,192,64,.1);border:1px solid var(--b2);color:var(--gold)}
+.lbd-row.nstr{background:var(--d3);border:1px solid var(--b1);color:var(--dm)}
+.lbd-row.bowl{background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.25);color:var(--red)}
+.lbd-score{font-family:'Orbitron';font-size:.8rem}
+.aerr{color:var(--red);font-size:.77rem;text-align:center;margin-top:7px;display:none}
+.asuc{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:8px;padding:8px 12px;font-size:.79rem;color:var(--ac2);margin-bottom:12px;display:none;align-items:center;gap:7px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--ac2);animation:lp 1.5s infinite;display:inline-block}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--d3);border:1px solid var(--b2);color:var(--tx);padding:9px 20px;border-radius:20px;font-size:.79rem;font-weight:500;z-index:9000;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ADMIN MATCH ROW */
+.admin-match-row{display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:9px 12px;gap:8px}
+.amr-info{flex:1;min-width:0}
+.amr-teams{font-size:.82rem;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amr-meta{font-size:.66rem;color:var(--mt);margin-top:1px}
+.amr-btns{display:flex;gap:5px;flex-shrink:0}
+
+/* GROUP COLOR THEMES */
+.gc-gold{background:rgba(240,192,64,.07);border-color:rgba(240,192,64,.3)!important}.gc-gold .gcard-h{background:rgba(240,192,64,.12)}.gc-gold .gcn{color:var(--gold)}
+.gc-blue{background:rgba(0,212,255,.05);border-color:rgba(0,212,255,.22)!important}.gc-blue .gcard-h{background:rgba(0,212,255,.09)}.gc-blue .gcn{color:var(--ac)}
+.gc-green{background:rgba(0,255,136,.04);border-color:rgba(0,255,136,.2)!important}.gc-green .gcard-h{background:rgba(0,255,136,.07)}.gc-green .gcn{color:var(--ac2)}
+.gc-red{background:rgba(255,59,92,.05);border-color:rgba(255,59,92,.2)!important}.gc-red .gcard-h{background:rgba(255,59,92,.08)}.gc-red .gcn{color:var(--red)}
+.gc-purple{background:rgba(155,89,182,.05);border-color:rgba(155,89,182,.2)!important}.gc-purple .gcard-h{background:rgba(155,89,182,.08)}.gc-purple .gcn{color:#c39bd3}
+.gc-teal{background:rgba(0,200,180,.05);border-color:rgba(0,200,180,.2)!important}.gc-teal .gcard-h{background:rgba(0,200,180,.08)}.gc-teal .gcn{color:#00c8b4}
+
+@media(min-width:480px){.htit{font-size:3.3rem}.tgrid{grid-template-columns:repeat(3,1fr)}.cgrid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.content{max-width:768px;margin:0 auto}}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="spl">
+  <div class="slogo">PPL</div>
+  <div class="stitle">Pattan Premier League</div>
+  <div class="ssub">Since 2010 · 16th Edition · 2026</div>
+  <div class="sbar"><div class="sfill"></div></div>
+  <div class="spl-status" id="splStatus">Connecting to Firebase…</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="ticker" id="tickerBar">
+    <div class="tk-lbl">📢 NEWS</div>
+    <div class="tk-wrap"><div class="tk-track" id="tkTrack"></div></div>
+  </div>
+
+  <header class="hdr">
+    <div class="hbrand">
+      <div class="hlogo">PPL</div>
+      <div><div class="htitle">PPL 2026</div><div class="hsub">Pattan Premier League</div></div>
+    </div>
+    <div class="hacts">
+      <span class="lbadge" id="liveBadge">LIVE</span>
+      <span class="sync-dot" id="syncDot" title="Firebase connected" style="display:none"></span>
+      <div class="hbtn" onclick="openAdmin()">⚙️</div>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <div class="ntabs" id="navTabs">
+      <div class="ntab on" data-page="home">🏠 Home</div>
+      <div class="ntab" data-page="live">🔴 Live</div>
+      <div class="ntab" data-page="schedule">📅 Schedule</div>
+      <div class="ntab" data-page="groups">🔢 Groups</div>
+      <div class="ntab" data-page="points">🏆 Points</div>
+      <div class="ntab" data-page="teams">🛡 Teams</div>
+      <div class="ntab" data-page="players">👤 Players</div>
+      <div class="ntab" data-page="polls">📊 Polls</div>
+      <div class="ntab" data-page="media">📸 Media</div>
+      <div class="ntab" data-page="organisers">🎖 Organisers</div>
+      <div class="ntab" data-page="rules">📋 Rules</div>
+      <div class="ntab" data-page="about">ℹ️ About</div>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <!-- HOME -->
+    <div id="page-home" class="pg on">
+      <div class="hero">
+        <div class="tbadge">⭐ Official App · PPL 2026</div>
+        <div class="htit">Pattan<br><span>Premier</span><br>League</div>
+        <div class="hmeta">📍 Pattan Cricket Ground &nbsp;|&nbsp; <strong>May–June 2026</strong></div>
+        <div class="hstats">
+          <div class="hsi"><div class="hsn" id="hs-teams">—</div><div class="hsl">Teams</div></div>
+          <div class="hsi"><div class="hsn" id="hs-matches">—</div><div class="hsl">Matches</div></div>
+          <div class="hsi"><div class="hsn" id="hs-players">—</div><div class="hsl">Players</div></div>
+          <div class="hsi"><div class="hsn">16</div><div class="hsl">Overs</div></div>
+        </div>
+      </div>
+      <div id="todayWrap"></div>
+      <div id="liveWrap"></div>
+      <div class="ibar" id="ibar" style="display:none">
+        <span style="font-size:1.3rem">📲</span>
+        <div class="itxt"><strong>Install PPL App</strong><br>Add to home screen for live alerts</div>
+        <div class="icta" onclick="installApp()">INSTALL</div>
+      </div>
+      <div id="cdWrap"></div>
+      <div id="hotWrap"></div>
+      <div class="stit"><h2>Quick <span>Access</span></h2></div>
+      <div class="cgrid">
+        <div class="icard" onclick="goTo('schedule')"><div class="ic-ic">📅</div><div class="ic-t">Schedule</div><div class="ic-s">All stages</div></div>
+        <div class="icard" onclick="goTo('points')"><div class="ic-ic">🏆</div><div class="ic-t">Standings</div><div class="ic-s">Points table</div></div>
+        <div class="icard" onclick="goTo('groups')"><div class="ic-ic">🔢</div><div class="ic-t">Groups</div><div class="ic-s">Group tables</div></div>
+        <div class="icard" onclick="goTo('teams')"><div class="ic-ic">🛡</div><div class="ic-t">Teams</div><div class="ic-s">All squads</div></div>
+        <div class="icard" onclick="goTo('polls')"><div class="ic-ic">📊</div><div class="ic-t">Polls</div><div class="ic-s">Vote now!</div></div>
+        <div class="icard" onclick="goTo('media')"><div class="ic-ic">📸</div><div class="ic-t">Gallery</div><div class="ic-s">Photos</div></div>
+      </div>
+      <div class="ftr"><div class="ftrl">PPL 2026</div><div class="ftrt">Pattan Premier League · Since 2010 · 16th Edition</div></div>
+    </div>
+
+    <!-- LIVE PAGE -->
+    <div id="page-live" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">🔴 Live Match</div></div>
+      <div id="livePageContent">
+        <div class="empty"><div class="empty-ic">🔴</div><div class="empty-tx">No live match right now.<br><strong>Admin</strong> starts a match from the admin panel.</div></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div id="page-schedule" class="pg">
+      <div class="sch-banner"><div class="sch-t">📅 PPL 2026 SCHEDULE</div><div class="sch-s">Official Tournament Schedule · All Stages</div></div>
+      <div style="padding:6px 14px 10px;display:flex;gap:7px;flex-wrap:wrap">
+        <span class="spill s-upcoming">🕐 Upcoming</span><span class="spill s-live">🔴 Live</span><span class="spill s-completed">✅ Completed</span><span class="spill s-rain">🌧 Rain</span><span class="spill s-stopped">⚠️ Stopped</span><span class="spill s-postponed">📅 Postponed</span>
+      </div>
+      <div id="scheduleContainer"><div class="empty"><div class="empty-ic">📅</div><div class="empty-tx">No matches yet.</div></div></div>
+    </div>
+
+    <!-- GROUPS -->
+    <div id="page-groups" class="pg">
+      <div style="padding:12px 14px 8px"><div class="tbadge">🔢 Group Stage Standings</div></div>
+      <div class="gcon" id="groupsContainer"><div class="empty"><div class="empty-ic">🔢</div><div class="empty-tx">No groups yet.</div></div></div>
+      <div style="padding:4px 14px 10px;font-size:.63rem;color:var(--mt)">🟢 Qualified · 🔴 Eliminated · NRR per ICC formula · Live from Firebase</div>
+    </div>
+
+    <!-- POINTS -->
+    <div id="page-points" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">🏆 Overall Tournament Standings</div></div>
+      <div style="padding:0 14px" id="pointsContainer"><div class="empty"><div class="empty-ic">🏆</div><div class="empty-tx">No data yet.</div></div></div>
+    </div>
+
+    <!-- TEAMS -->
+    <div id="page-teams" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">🛡 All Teams</div></div>
+      <div class="tgrid" id="teamsGrid"><div style="grid-column:1/-1" class="empty"><div class="empty-ic">🛡</div><div class="empty-tx">No teams yet.</div></div></div>
+    </div>
+
+    <!-- PLAYERS -->
+    <div id="page-players" class="pg">
+      <div style="padding:12px 14px 0"><div class="tbadge">👤 Player Statistics</div></div>
+      <div class="pfilt">
+        <button class="fbtn on" onclick="filterPlayers('batting',this)">⚡ Batting</button>
+        <button class="fbtn" onclick="filterPlayers('bowling',this)">🎯 Bowling</button>
+        <button class="fbtn" onclick="filterPlayers('allround',this)">⭐ All-Round</button>
+      </div>
+      <div class="plist" id="playersList"><div class="empty"><div class="empty-ic">👤</div><div class="empty-tx">No players yet.</div></div></div>
+    </div>
+
+    <!-- POLLS -->
+    <div id="page-polls" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">📊 Fan Polls · Vote Now</div></div>
+      <div class="pollist" id="pollsList"><div class="empty"><div class="empty-ic">📊</div><div class="empty-tx">No polls yet.</div></div></div>
+    </div>
+
+    <!-- MEDIA -->
+    <div id="page-media" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">📸 Gallery</div></div>
+      <div style="padding:0 14px 8px;display:flex;gap:7px;flex-wrap:wrap">
+        <button class="fbtn on" onclick="filterMedia('all',this)">All</button>
+        <button class="fbtn" onclick="filterMedia('match',this)">Match</button>
+        <button class="fbtn" onclick="filterMedia('players',this)">Players</button>
+        <button class="fbtn" onclick="filterMedia('crowd',this)">Crowd</button>
+        <button class="fbtn" onclick="filterMedia('ceremony',this)">Ceremony</button>
+      </div>
+      <div class="mgrid" id="galleryGrid"><div style="grid-column:1/-1" class="empty"><div class="empty-ic">📸</div><div class="empty-tx">No photos yet.</div></div></div>
+    </div>
+
+    <!-- ORGANISERS -->
+    <div id="page-organisers" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">🎖 Tournament Officials</div></div>
+      <div class="orglist" id="orgList"><div class="empty"><div class="empty-ic">🎖</div><div class="empty-tx">No organisers yet.</div></div></div>
+    </div>
+
+    <!-- RULES -->
+    <div id="page-rules" class="pg">
+      <div style="padding:14px 14px 8px"><div class="tbadge">📋 Official Rules</div></div>
+      <div class="rlist" id="rulesList"><div class="empty"><div class="empty-ic">📋</div><div class="empty-tx">No rules yet.</div></div></div>
+    </div>
+
+    <!-- ABOUT -->
+    <div id="page-about" class="pg">
+      <div style="padding:14px">
+        <div class="abcard">
+          <div class="ablogo">PPL</div>
+          <div class="abt">Pattan Premier League</div>
+          <div class="abs">Since 2010 · 16th Edition · Kohistan, KPK</div>
+          <div class="abd">The Pattan Premier League is the most prestigious cricket tournament in the Pattan region, uniting the community through the spirit of cricket since 2010.</div>
+          <div class="abgrid">
+            <div class="abitem"><div class="ablbl">Founded</div><div class="abval">2010</div></div>
+            <div class="abitem"><div class="ablbl">Edition</div><div class="abval">16th (2026)</div></div>
+            <div class="abitem"><div class="ablbl">Format</div><div class="abval">T16 Cricket</div></div>
+            <div class="abitem"><div class="ablbl">Location</div><div class="abval">Pattan, KPK</div></div>
+            <div class="abitem"><div class="ablbl">Teams</div><div class="abval" id="abt-teams">—</div></div>
+            <div class="abitem"><div class="ablbl">Matches</div><div class="abval" id="abt-matches">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ════════════ ADMIN MODAL ════════════ -->
+<div id="adminModal" class="movl">
+  <div class="mbox" style="max-width:430px">
+    <div class="mhdr"><div class="mtit">⚙️ ADMIN PANEL</div><div class="mclose" onclick="CM('adminModal')">✕</div></div>
+    <div class="alogf" id="aLoginF">
+      <div style="text-align:center;margin-bottom:18px;color:var(--dm);font-size:.81rem">Enter credentials to manage PPL 2026</div>
+      <div class="fr"><label class="fl">Username</label><input class="fi" id="aUser" type="text" placeholder="ppl2026" autocomplete="off"></div>
+      <div class="fr"><label class="fl">Password</label><input class="fi" id="aPass" type="password" placeholder="••••••••"></div>
+      <button class="btnp" onclick="doLogin()">LOGIN TO DASHBOARD</button>
+      <div class="aerr" id="aErr">⚠️ Invalid credentials</div>
+    </div>
+    <div class="adash" id="aDash">
+      <div class="asuc" id="aSuc">✅ Logged in · <span class="sync-dot"></span> Firebase Live</div>
+
+      <!-- LIVE SCORING -->
+      <div class="asec">
+        <div class="asectit">🔴 Live Match Control</div>
+        <div class="fr"><label class="fl">Start Live Match</label>
+          <select class="fsel" id="liveMatchSel" onchange="setLiveMatch(this.value)"><option value="">— Select upcoming match —</option></select>
+        </div>
+        <div id="liveControls" style="display:none">
+          <!-- Score display -->
+          <div class="lsd"><div class="lsds" id="admScore">0 / 0</div><div class="lsdo" id="admOvers">0.0 overs</div></div>
+          <!-- Live batter/bowler display -->
+          <div class="live-batter-disp">
+            <div class="lbd-row str"><span id="admStrikerDisp">⚡ Striker: —</span><span class="lbd-score" id="admStrikerScore">0(0)</span></div>
+            <div class="lbd-row nstr"><span id="admNonDisp">Non-Striker: —</span><span class="lbd-score" id="admNonScore">0(0)</span></div>
+            <div class="lbd-row bowl"><span id="admBowlerDisp">🎯 Bowler: —</span><span class="lbd-score" id="admBowlerScore">0.0ov 0R 0W</span></div>
+          </div>
+          <!-- Score pad -->
+          <div class="spad">
+            <div class="srow">
+              <button class="sbtn run" onclick="addRun(0)">0</button>
+              <button class="sbtn run" onclick="addRun(1)">1</button>
+              <button class="sbtn run" onclick="addRun(2)">2</button>
+              <button class="sbtn run" onclick="addRun(3)">3</button>
+            </div>
+            <div class="srow">
+              <button class="sbtn four" onclick="addRun(4)">4</button>
+              <button class="sbtn six" onclick="addRun(6)">6</button>
+              <button class="sbtn wide" onclick="addExtra('WD')">WD</button>
+              <button class="sbtn wide" onclick="addExtra('NB')">NB</button>
+            </div>
+            <div class="srow">
+              <button class="sbtn wkt" onclick="addWkt('Bowled')">BWD</button>
+              <button class="sbtn wkt" onclick="addWkt('Caught')">CT</button>
+              <button class="sbtn wkt" onclick="addWkt('RunOut')">RO</button>
+              <button class="sbtn wkt" onclick="addWkt('LBW')">LBW</button>
+            </div>
+          </div>
+          <!-- Batting team squad for striker selection -->
+          <div id="battingSquadSection">
+            <label class="fl" style="margin-bottom:6px">⚡ ON STRIKE — tap to set</label>
+            <div class="squad-selector" id="strikerSquad"></div>
+            <label class="fl" style="margin:6px 0">🏏 NON-STRIKER — tap to set</label>
+            <div class="squad-selector" id="nonStrikerSquad"></div>
+          </div>
+          <!-- Bowling team squad -->
+          <div id="bowlingSquadSection" style="margin-top:8px">
+            <label class="fl" style="margin-bottom:6px">🎯 BOWLER — tap to set</label>
+            <div class="squad-selector" id="bowlerSquad"></div>
+          </div>
+          <!-- Rotate + bowler controls -->
+          <div class="fgrid" style="margin-top:8px;gap:6px">
+            <button class="btns" style="color:var(--ac2);border-color:rgba(0,255,136,.3)" onclick="manualRotate()">🔄 ROTATE STRIKE</button>
+            <button class="btns" style="color:var(--or);border-color:rgba(255,140,0,.3)" onclick="endInningsOrMatch()">🏁 END INNINGS</button>
+          </div>
+          <button class="btns" style="width:100%;margin-top:6px;color:var(--red);border-color:rgba(255,59,92,.3)" onclick="endLiveMatch()">❌ END MATCH</button>
+        </div>
+      </div>
+
+      <!-- SQUAD MANAGEMENT -->
+      <div class="asec">
+        <div class="asectit">👥 Team Squads (Tournament Persistent)</div>
+        <div class="fr"><label class="fl">Select Team</label>
+          <select class="fsel" id="squadTeamSel" onchange="loadSquadForEdit(this.value)"><option value="">— Select team —</option></select>
+        </div>
+        <div id="squadEditSection" style="display:none">
+          <div style="font-size:.72rem;color:var(--dm);margin-bottom:6px">Current squad (<span id="squadCount">0</span> players)</div>
+          <div id="squadCurrentList" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+          <div class="fgrid">
+            <input class="fi" id="squadPlayerName" placeholder="Player name">
+            <select class="fsel" id="squadPlayerRole">
+              <option value="bat">Batsman</option>
+              <option value="bowl">Bowler</option>
+              <option value="ar">All-Rounder</option>
+              <option value="wk">WK-Batsman</option>
+            </select>
+          </div>
+          <button class="btnp" style="margin-top:6px" onclick="addSquadPlayer()">+ ADD TO SQUAD</button>
+        </div>
+      </div>
+
+      <!-- GROUPS -->
+      <div class="asec">
+        <div class="asectit">🔢 Manage Groups</div>
+        <div id="aGrpList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+        <button class="btnp" onclick="openGrpModal()">+ ADD GROUP</button>
+      </div>
+
+      <!-- TEAMS -->
+      <div class="asec">
+        <div class="asectit">🛡 Manage Teams</div>
+        <div id="aTeamList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+        <button class="btnp" onclick="openTeamModal()">+ ADD TEAM</button>
+      </div>
+
+      <!-- SCHEDULE -->
+      <div class="asec">
+        <div class="asectit">📅 Schedule</div>
+        <div class="agrid" style="margin-bottom:10px">
+          <div class="aact" onclick="openMatchModal()"><div class="aact-ic">➕</div><div class="aact-tx">Add Match</div></div>
+          <div class="aact" onclick="openStatusModal()"><div class="aact-ic">🔄</div><div class="aact-tx">Update Status</div></div>
+        </div>
+        <div id="aMatchList" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto"></div>
+      </div>
+
+      <!-- PLAYERS -->
+      <div class="asec">
+        <div class="asectit">👤 Players</div>
+        <div id="aPlayerList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;max-height:150px;overflow-y:auto"></div>
+        <button class="btnp" onclick="openPlayerModal()">+ ADD PLAYER</button>
+      </div>
+
+      <!-- POLLS -->
+      <div class="asec">
+        <div class="asectit">📊 Polls</div>
+        <div id="aPollList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+        <button class="btnp" onclick="openPollModal()">+ ADD POLL</button>
+      </div>
+
+      <!-- ANNOUNCEMENTS -->
+      <div class="asec">
+        <div class="asectit">📢 Announcements</div>
+        <div class="fr"><input class="fi" id="newAnn" type="text" placeholder="Type announcement…"></div>
+        <button class="btnp" onclick="addAnn()">POST</button>
+        <div id="annList" style="margin-top:10px;display:flex;flex-direction:column;gap:5px;max-height:110px;overflow-y:auto"></div>
+      </div>
+
+      <!-- RULES -->
+      <div class="asec">
+        <div class="asectit">📋 Rules</div>
+        <div id="aRuleList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:9px;max-height:130px;overflow-y:auto"></div>
+        <div class="fr"><input class="fi" id="newRule" placeholder="Add rule…"></div>
+        <button class="btnp" onclick="addRule()">ADD RULE</button>
+      </div>
+
+      <!-- ORGANISERS -->
+      <div class="asec">
+        <div class="asectit">🎖 Organisers</div>
+        <div id="aOrgList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+        <button class="btnp" onclick="openOrgModal()">+ ADD ORGANISER</button>
+      </div>
+
+      <!-- PUSH NOTIFICATIONS -->
+      <div class="asec">
+        <div class="asectit">🔔 Push Notifications</div>
+        <div style="background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.76rem;color:var(--dm)">
+          ✅ Wickets, Fours, Sixes, Match Start, Match Result &amp; Innings End are <strong style="color:var(--ac2)">sent automatically</strong> during live scoring.
+        </div>
+        <div class="fr"><label class="fl">Custom Notification Title</label><input class="fi" id="notifTitle" placeholder="e.g. Match Tomorrow!"></div>
+        <div class="fr"><label class="fl">Message Body</label><input class="fi" id="notifBody" placeholder="e.g. Pattan Warriors vs River Hawks at 2PM"></div>
+        <button class="btnp" onclick="adminSendCustomNotif()">📢 SEND NOTIFICATION</button>
+        <div style="margin-top:8px" class="agrid">
+          <div class="aact" onclick="notifyUpcomingMatch(MATCHES.filter(m=>m.status==='upcoming')[0]||{t1:'Team A',t2:'Team B',date:'',time:'',venue:''})"><div class="aact-ic">📅</div><div class="aact-tx">Notify Next Match</div></div>
+          <div class="aact" onclick="adminSendPush('🏏 PPL 2026 Update','Check the latest scores and standings!','🏏')"><div class="aact-ic">📊</div><div class="aact-tx">General Update</div></div>
+        </div>
+      </div>
+
+      <button class="btns" style="width:100%;margin-top:4px" onclick="adminOut()">LOGOUT</button>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP MODAL -->
+<div id="grpModal" class="movl"><div class="mbox" style="max-width:360px">
+  <div class="mhdr"><div class="mtit" id="grpMTit">ADD GROUP</div><div class="mclose" onclick="CM('grpModal')">✕</div></div>
+  <div class="mbody">
+    <input type="hidden" id="grpEId">
+    <div class="fr"><label class="fl">Group Name</label><input class="fi" id="grpName" placeholder="Group A"></div>
+    <div class="fr"><label class="fl">Color</label>
+      <select class="fsel" id="grpColor"><option value="gold">🟡 Gold</option><option value="blue">🔵 Blue</option><option value="green">🟢 Green</option><option value="red">🔴 Red</option><option value="purple">🟣 Purple</option><option value="teal">🩵 Teal</option></select>
+    </div>
+    <button class="btnp" onclick="saveGrp()">SAVE GROUP</button>
+  </div>
+</div></div>
+
+<!-- TEAM MODAL -->
+<div id="teamModal" class="movl"><div class="mbox" style="max-width:380px">
+  <div class="mhdr"><div class="mtit" id="teamMTit">ADD TEAM</div><div class="mclose" onclick="CM('teamModal')">✕</div></div>
+  <div class="mbody">
+    <input type="hidden" id="teamEId">
+    <div class="fr"><label class="fl">Team Name</label><input class="fi" id="teamName" placeholder="Pattan Warriors"></div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Emoji</label><input class="fi" id="teamEmoji" placeholder="⚔️"></div>
+      <div class="fr"><label class="fl">Captain</label><input class="fi" id="teamCap" placeholder="Captain name"></div>
+    </div>
+    <div class="fr"><label class="fl">Group</label>
+      <select class="fsel" id="teamGroup"><option value="">— No Group —</option></select>
+    </div>
+    <button class="btnp" onclick="saveTeam()">SAVE TEAM</button>
+  </div>
+</div></div>
+
+<!-- MATCH MODAL -->
+<div id="matchModal" class="movl"><div class="mbox">
+  <div class="mhdr"><div class="mtit" id="matchMTit">ADD MATCH</div><div class="mclose" onclick="CM('matchModal')">✕</div></div>
+  <div class="mbody">
+    <input type="hidden" id="matchEId">
+    <div class="fr"><label class="fl">Stage</label>
+      <select class="fsel" id="mStage"><option value="group">Group Stage</option><option value="prequarter">Pre-Quarter Final</option><option value="quarter">Quarter Final</option><option value="semi">Semi Final</option><option value="final">Final</option></select>
+    </div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Group</label><select class="fsel" id="mGroup"><option value="">— None —</option></select></div>
+      <div class="fr"><label class="fl">Match No.</label><input class="fi" id="mNo" placeholder="01"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Team 1</label><select class="fsel" id="mT1"><option value="">— Select —</option></select></div>
+      <div class="fr"><label class="fl">Team 2</label><select class="fsel" id="mT2"><option value="">— Select —</option></select></div>
+    </div>
+    <div class="fgrid3">
+      <div class="fr"><label class="fl">Date</label><input class="fi" id="mDate" type="date"></div>
+      <div class="fr"><label class="fl">Time</label><input class="fi" id="mTime" type="time"></div>
+      <div class="fr"><label class="fl">Year</label><input class="fi" id="mYear" type="number" value="2026" min="2020" max="2035"></div>
+    </div>
+    <div class="fr"><label class="fl">Venue</label><input class="fi" id="mVenue" placeholder="Pattan Cricket Ground"></div>
+    <div class="fr"><label class="fl">Status</label>
+      <select class="fsel" id="mStatus" onchange="toggleResFields(this.value)"><option value="upcoming">🕐 Upcoming</option><option value="live">🔴 Live</option><option value="completed">✅ Completed</option><option value="rain">🌧 Rain/D-L</option><option value="stopped">⚠️ Stopped</option><option value="postponed">📅 Postponed</option><option value="cancelled">❌ Cancelled</option></select>
+    </div>
+    <div id="resField" style="display:none" class="fr"><label class="fl">Result / Note</label><input class="fi" id="mResult" placeholder="Team A won by 20 runs"></div>
+    <div id="scField" style="display:none"><div class="fgrid">
+      <div class="fr"><label class="fl">T1 Score</label><input class="fi" id="mS1" placeholder="132/5 (16)"></div>
+      <div class="fr"><label class="fl">T2 Score</label><input class="fi" id="mS2" placeholder="128/7 (16)"></div>
+    </div></div>
+    <button class="btnp" onclick="saveMatch()">SAVE MATCH</button>
+  </div>
+</div></div>
+
+<!-- STATUS MODAL -->
+<div id="statusModal" class="movl"><div class="mbox" style="max-width:380px">
+  <div class="mhdr"><div class="mtit">UPDATE STATUS</div><div class="mclose" onclick="CM('statusModal')">✕</div></div>
+  <div class="mbody">
+    <div class="fr"><label class="fl">Match</label><select class="fsel" id="stSel"></select></div>
+    <div class="fr"><label class="fl">New Status</label>
+      <select class="fsel" id="stStatus"><option value="upcoming">🕐 Upcoming</option><option value="live">🔴 Live</option><option value="completed">✅ Completed</option><option value="rain">🌧 Rain/D-L</option><option value="stopped">⚠️ Stopped</option><option value="postponed">📅 Postponed</option><option value="cancelled">❌ Cancelled</option></select>
+    </div>
+    <div class="fr"><label class="fl">Result / Note</label><input class="fi" id="stResult" placeholder="Optional"></div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">T1 Score</label><input class="fi" id="stS1" placeholder="132/5 (16)"></div>
+      <div class="fr"><label class="fl">T2 Score</label><input class="fi" id="stS2" placeholder="128/7 (16)"></div>
+    </div>
+    <div class="fr"><label class="fl">Reschedule Date</label><input class="fi" id="stDate" type="date"></div>
+    <button class="btnp" onclick="saveStatus()">UPDATE</button>
+  </div>
+</div></div>
+
+<!-- PLAYER MODAL -->
+<div id="playerModal" class="movl"><div class="mbox" style="max-width:400px">
+  <div class="mhdr"><div class="mtit" id="playerMTit">ADD PLAYER</div><div class="mclose" onclick="CM('playerModal')">✕</div></div>
+  <div class="mbody">
+    <input type="hidden" id="playerEId">
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Name</label><input class="fi" id="pName" placeholder="Full Name"></div>
+      <div class="fr"><label class="fl">Emoji</label><input class="fi" id="pEmoji" placeholder="🏏"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Team</label><select class="fsel" id="pTeam"><option value="">— Select —</option></select></div>
+      <div class="fr"><label class="fl">Role</label>
+        <select class="fsel" id="pRole"><option value="batting">Batsman</option><option value="bowling">Bowler</option><option value="allround">All-Rounder</option><option value="wk">WK-Batsman</option></select>
+      </div>
+    </div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Runs</label><input class="fi" id="pRuns" type="number" placeholder="0" min="0"></div>
+      <div class="fr"><label class="fl">Wickets</label><input class="fi" id="pWkts" type="number" placeholder="0" min="0"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Strike Rate</label><input class="fi" id="pSR" type="number" placeholder="0.0" step="0.1"></div>
+      <div class="fr"><label class="fl">Best</label><input class="fi" id="pBest" placeholder="92* or 4/18"></div>
+    </div>
+    <button class="btnp" onclick="savePlayer()">SAVE PLAYER</button>
+  </div>
+</div></div>
+
+<!-- POLL MODAL -->
+<div id="pollModal" class="movl"><div class="mbox" style="max-width:400px">
+  <div class="mhdr"><div class="mtit">ADD POLL</div><div class="mclose" onclick="CM('pollModal')">✕</div></div>
+  <div class="mbody">
+    <div class="fr"><label class="fl">Poll Type</label><input class="fi" id="pollType" placeholder="Pre-Match Poll"></div>
+    <div class="fr"><label class="fl">Question</label><input class="fi" id="pollQ" placeholder="Who will win?"></div>
+    <div class="fr"><label class="fl">Option 1</label><input class="fi" id="pollO1" placeholder="Option 1"></div>
+    <div class="fr"><label class="fl">Option 2</label><input class="fi" id="pollO2" placeholder="Option 2"></div>
+    <div class="fr"><label class="fl">Option 3 (optional)</label><input class="fi" id="pollO3" placeholder="Option 3"></div>
+    <div class="fr"><label class="fl">Option 4 (optional)</label><input class="fi" id="pollO4" placeholder="Option 4"></div>
+    <button class="btnp" onclick="savePoll()">SAVE POLL</button>
+  </div>
+</div></div>
+
+<!-- ORGANISER MODAL -->
+<div id="orgModal" class="movl"><div class="mbox" style="max-width:380px">
+  <div class="mhdr"><div class="mtit" id="orgMTit">ADD ORGANISER</div><div class="mclose" onclick="CM('orgModal')">✕</div></div>
+  <div class="mbody">
+    <input type="hidden" id="orgEId">
+    <div class="fr"><label class="fl">Full Name</label><input class="fi" id="orgName" placeholder="Name"></div>
+    <div class="fgrid">
+      <div class="fr"><label class="fl">Role</label><input class="fi" id="orgRole" placeholder="Tournament Director"></div>
+      <div class="fr"><label class="fl">Emoji</label><input class="fi" id="orgEmoji" placeholder="👔"></div>
+    </div>
+    <div class="fr"><label class="fl">Since</label><input class="fi" id="orgSince" placeholder="Since 2010"></div>
+    <button class="btnp" onclick="saveOrg()">SAVE</button>
+  </div>
+</div></div>
+
+<!-- PUSH NOTIFICATION PERMISSION BAR -->
+<div id="notifBar" style="display:none;position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:8000;background:linear-gradient(135deg,#0a1628,#111d3a);border:1px solid rgba(240,192,64,.4);border-radius:14px;padding:12px 16px;align-items:center;gap:10px;max-width:340px;width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)">
+  <span style="font-size:1.4rem">🔔</span>
+  <div style="flex:1">
+    <div style="font-size:.82rem;font-weight:700;color:var(--tx)">Get Live Alerts</div>
+    <div style="font-size:.7rem;color:var(--dm)">Match start, wickets, results</div>
+  </div>
+  <button onclick="subscribePush()" style="background:linear-gradient(135deg,var(--gd),var(--gold));border:none;border-radius:8px;color:var(--deep);font-family:'Bebas Neue';font-size:.85rem;letter-spacing:1px;padding:7px 13px;cursor:pointer;white-space:nowrap">ENABLE</button>
+  <button onclick="document.getElementById('notifBar').style.display='none';localStorage.setItem('ppl_notif_dismissed','1')" style="background:none;border:none;color:var(--mt);font-size:1rem;cursor:pointer;padding:2px 4px">✕</button>
+</div>
+
+<!-- PUSH NOTIFICATION IN-APP BANNER (foreground) -->
+<div id="pushBanner" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:8500;background:linear-gradient(135deg,#0f1e0f,#162816);border:1px solid rgba(0,255,136,.35);border-radius:14px;padding:13px 16px;max-width:340px;width:92%;box-shadow:0 8px 30px rgba(0,0,0,.5)">
+  <div style="display:flex;align-items:flex-start;gap:10px">
+    <span id="pushBannerIcon" style="font-size:1.4rem;flex-shrink:0">📢</span>
+    <div style="flex:1">
+      <div id="pushBannerTitle" style="font-size:.88rem;font-weight:700;color:var(--tx)"></div>
+      <div id="pushBannerBody" style="font-size:.75rem;color:var(--dm);margin-top:3px"></div>
+    </div>
+    <button onclick="document.getElementById('pushBanner').style.display='none'" style="background:none;border:none;color:var(--mt);font-size:1rem;cursor:pointer;flex-shrink:0">✕</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PPL 2026 — Firebase Realtime Database App
+// All data lives in Firebase. Every viewer sees real-time updates.
+// ═══════════════════════════════════════════════════════════════
+
+// In-memory cache (populated by Firebase listeners)
+let GROUPS=[], TEAMS=[], MATCHES=[], PLAYERS=[], POLLS=[], ORGS=[], RULES=[], ANN=[], GALLERY=[];
+let LIVE=null;   // live scoring state
+let IS_ADMIN=false;
+let cdInterval;
+
+// Firebase DB reference (set once firebase-ready fires)
+let FDB=null;
+
+// ── HELPERS ──
+const SL=s=>({upcoming:'🕐 Upcoming',live:'🔴 Live',completed:'✅ Completed',rain:'🌧 Rain/D-L',stopped:'⚠️ Stopped',postponed:'📅 Postponed',cancelled:'❌ Cancelled'}[s]||s);
+const FD=d=>{if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}catch{return d;}};
+const FT=t=>{if(!t)return'—';const[h,m]=t.split(':');const ap=+h>=12?'PM':'AM';return`${(+h%12)||12}:${m} ${ap}`;};
+const GE=name=>(TEAMS.find(t=>t.name===name)||{emoji:'🏏'}).emoji;
+const UID=()=>'id'+Date.now()+Math.random().toString(36).substr(2,6);
+
+function parseScore(s,maxOv){
+  if(!s||s==='—') return null;
+  const m=s.match(/(\d+)\/(\d+)\s*\(?([\d.]+)?/);
+  if(!m) return null;
+  const runs=parseInt(m[1]),wkts=parseInt(m[2]);
+  let ov=m[3]?parseFloat(m[3]):maxOv;
+  return{runs,wkts,overs:Math.min(parseFloat(ov)||maxOv,maxOv)};
+}
+
+// ── NRR (ICC) ──
+function calcNRR(teamName){
+  let rs=0,of=0,rc=0,ob=0;
+  MATCHES.forEach(m=>{
+    if(m.status!=='completed') return;
+    const maxOv=m.overs||16;
+    const s1=parseScore(m.s1,maxOv),s2=parseScore(m.s2,maxOv);
+    if(!s1||!s2) return;
+    if(m.t1===teamName){rs+=s1.runs;of+=s1.overs;rc+=s2.runs;ob+=s2.overs;}
+    else if(m.t2===teamName){rs+=s2.runs;of+=s2.overs;rc+=s1.runs;ob+=s1.overs;}
+  });
+  if(of===0||ob===0) return 0;
+  return (rs/of)-(rc/ob);
+}
+function getStats(teamName){
+  let played=0,won=0,lost=0,nr=0,pts=0;
+  MATCHES.forEach(m=>{
+    if(m.status!=='completed') return;
+    if(m.t1!==teamName&&m.t2!==teamName) return;
+    played++;
+    const res=(m.result||'').toLowerCase();
+    if(res.includes('no result')||res.includes('abandoned')){nr++;pts+=1;}
+    else if(m.result&&m.result.includes(teamName)){won++;pts+=2;}
+    else if(res.includes('tied')){pts+=1;}
+    else{lost++;}
+  });
+  const n=calcNRR(teamName);
+  return{played,won,lost,nr,pts,nrr:(n>=0?'+':'')+n.toFixed(3),nrrNum:n};
+}
+
+// ─────────────────────────────────────────
+// FIREBASE BOOT — called directly by Firebase init block at bottom of page
+// ─────────────────────────────────────────
+// FDB is set and setupListeners() is called from the Firebase <script> block
+// at the end of <body> once the compat SDK has loaded and DOM is ready.
+
+function setupListeners(){
+  // Real-time listeners for every data node
+  FDB.dbListen('groups',   v=>{ GROUPS  = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderGroups();renderPoints();renderTeams();});
+  FDB.dbListen('teams',    v=>{ TEAMS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderTeams();renderGroups();renderPoints();updateStats();populateSquadTeamSel();});
+  FDB.dbListen('matches',  v=>{ MATCHES = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderSchedule();renderGroups();renderPoints();renderTodayPoster();renderCountdown();updateStats(); if(IS_ADMIN)renderAMatchList();});
+  FDB.dbListen('players',  v=>{ PLAYERS = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderPlayers('batting'); if(IS_ADMIN)renderAPlayerList();});
+  FDB.dbListen('polls',    v=>{ POLLS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderPolls(); if(IS_ADMIN)renderAPollList();});
+  FDB.dbListen('orgs',     v=>{ ORGS    = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderOrgs(); if(IS_ADMIN)renderAOrgList();});
+  FDB.dbListen('rules',    v=>{ RULES   = v?(Array.isArray(v)?v:Object.values(v)):[];           renderRules(); if(IS_ADMIN)renderARuleList();});
+  FDB.dbListen('ann',      v=>{ ANN     = v?(Array.isArray(v)?v:Object.values(v)):[];           renderTicker(); if(IS_ADMIN)renderAAnnList();});
+  FDB.dbListen('gallery',  v=>{ GALLERY = v?Object.entries(v).map(([id,d])=>({id,...d})):[];   renderGallery('all');});
+  // Live match state — real-time for all viewers
+  FDB.dbListen('live', v=>{
+    LIVE=v;
+    renderLiveCard();
+    renderLivePage();
+    renderHotPlayer();
+    const hasLive=!!(LIVE&&LIVE.matchId);
+    document.getElementById('liveBadge').classList.toggle('show', hasLive);
+    if(IS_ADMIN && hasLive) syncAdminScoreDisplay();
+  });
+
+  // Boot app after brief delay (let listeners fire)
+  setTimeout(bootApp, 1800);
+}
+
+function bootApp(){
+  document.getElementById('spl').classList.add('out');
+  setTimeout(()=>{
+    document.getElementById('spl').style.display='none';
+    document.getElementById('app').classList.add('vis');
+    setupNotificationListener();
+    checkNotifPrompt();
+    scheduleMatchReminders();
+  },650);
+}
+
+function updateStats(){
+  document.getElementById('hs-teams').textContent   = TEAMS.length||'—';
+  document.getElementById('hs-matches').textContent = MATCHES.length||'—';
+  document.getElementById('hs-players').textContent = PLAYERS.length||'—';
+  document.getElementById('abt-teams').textContent  = TEAMS.length||'—';
+  document.getElementById('abt-matches').textContent= MATCHES.length||'—';
+}
+
+// ─────────────────────────────────────────
+// TICKER
+// ─────────────────────────────────────────
+function renderTicker(){
+  const items=ANN.length?ANN:['Welcome to PPL 2026 – Official Tournament App'];
+  const doubled=[...items,...items];
+  document.getElementById('tkTrack').innerHTML=doubled.map(a=>`<span class="tk-item"><span class="tk-dot"></span>${a}</span>`).join('');
+}
+
+// ─────────────────────────────────────────
+// TODAY POSTER
+// ─────────────────────────────────────────
+function renderTodayPoster(){
+  const today=new Date().toISOString().split('T')[0];
+  const m=MATCHES.find(x=>x.date===today&&x.status!=='postponed'&&x.status!=='cancelled'&&x.status!=='live')
+         ||MATCHES.find(x=>x.status==='live');
+  const wrap=document.getElementById('todayWrap');
+  if(!m){wrap.innerHTML='';return;}
+  const t1=TEAMS.find(t=>t.name===m.t1)||{emoji:'🏏'};
+  const t2=TEAMS.find(t=>t.name===m.t2)||{emoji:'🏏'};
+  wrap.innerHTML=`
+    <div class="stit"><h2>📆 <span>Today's</span> Match</h2></div>
+    <div class="tposter">
+      <div class="tp-h">
+        <span style="font-size:.68rem;color:var(--ac2);letter-spacing:2px;text-transform:uppercase">MATCH ${m.no||''} · ${(m.group||m.stage||'').toUpperCase()}</span>
+        <span class="spill s-${m.status}">${SL(m.status)}</span>
+      </div>
+      <div class="tp-b">
+        <div class="tp-teams">
+          <div class="tp-t"><div class="tp-emoji">${t1.emoji}</div><div class="tp-name">${m.t1}</div></div>
+          <div class="tp-vs">VS</div>
+          <div class="tp-t"><div class="tp-emoji">${t2.emoji}</div><div class="tp-name">${m.t2}</div></div>
+        </div>
+        <div class="tp-info">
+          <span>📅 ${FD(m.date)}</span><span>🕐 ${FT(m.time)}</span><span>📍 ${m.venue||'—'}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────
+// COUNTDOWN — auto-fetched from fixtures
+// ─────────────────────────────────────────
+function renderCountdown(){
+  const upcoming=MATCHES.filter(m=>m.status==='upcoming').sort((a,b)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b.date+'T'+(b.time||'00:00')));
+  const wrap=document.getElementById('cdWrap');
+  if(!upcoming.length){wrap.innerHTML='';return;}
+  const next=upcoming[0];
+  const t1=TEAMS.find(t=>t.name===next.t1)||{emoji:'🏏'};
+  const t2=TEAMS.find(t=>t.name===next.t2)||{emoji:'🏏'};
+  wrap.innerHTML=`
+    <div class="stit"><h2>⏳ Next <span>Match</span></h2></div>
+    <div class="cdcard">
+      <div class="cdtit">🏏 Match ${next.no||''} — ${next.t1} vs ${next.t2}</div>
+      <div style="display:flex;align-items:center;justify-content:space-around;padding:8px 0;margin-bottom:8px">
+        <div style="text-align:center"><div style="font-size:1.5rem">${t1.emoji}</div><div style="font-size:.72rem;font-weight:700;color:var(--tx);margin-top:3px">${next.t1}</div></div>
+        <div style="font-family:'Bebas Neue';font-size:1.3rem;color:var(--gold);opacity:.5">VS</div>
+        <div style="text-align:center"><div style="font-size:1.5rem">${t2.emoji}</div><div style="font-size:.72rem;font-weight:700;color:var(--tx);margin-top:3px">${next.t2}</div></div>
+      </div>
+      <div class="cdtimer">
+        <div class="cdu"><div class="cdv" id="cd-d">00</div><div class="cdl">Days</div></div>
+        <div class="cdu"><div class="cdv" id="cd-h">00</div><div class="cdl">Hrs</div></div>
+        <div class="cdu"><div class="cdv" id="cd-m">00</div><div class="cdl">Min</div></div>
+        <div class="cdu"><div class="cdv" id="cd-s">00</div><div class="cdl">Sec</div></div>
+      </div>
+      <div style="margin-top:8px;font-size:.7rem;color:var(--mt);text-align:center">📅 ${FD(next.date)} &nbsp;🕐 ${FT(next.time)} &nbsp;📍 ${next.venue||'—'}</div>
+    </div>`;
+  clearInterval(cdInterval);
+  const target=new Date(next.date+'T'+(next.time||'14:00')+':00');
+  function tick(){
+    const diff=target-new Date();
+    if(diff<=0){const el=document.querySelector('.cdtit');if(el)el.textContent='⚡ Match is starting!';clearInterval(cdInterval);return;}
+    const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+    ['d','h','m','s'].forEach((k,i)=>{const el=document.getElementById('cd-'+k);if(el)el.textContent=String([d,h,m,s][i]).padStart(2,'0');});
+  }
+  tick(); cdInterval=setInterval(tick,1000);
+}
+
+// ─────────────────────────────────────────
+// HOT PLAYER — auto from Firebase innings data
+// ─────────────────────────────────────────
+function computeHotPlayer(){
+  const liveMatch=MATCHES.find(m=>m.status==='live');
+  const completedMatches=MATCHES.filter(m=>m.status==='completed').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(liveMatch&&LIVE&&LIVE.matchId===liveMatch.id){
+    const batters=LIVE.batters||[];
+    const bowlers=LIVE.bowlers||[];
+    if(LIVE.striker&&LIVE.striker.name) batters.push({...LIVE.striker,out:false});
+    if(LIVE.nonstriker&&LIVE.nonstriker.name) batters.push({...LIVE.nonstriker,out:false});
+    if(LIVE.currentBowler&&LIVE.currentBowler.name) bowlers.push({...LIVE.currentBowler});
+    return pickHot(batters,bowlers,liveMatch,true);
+  }
+  for(const m of completedMatches){
+    const inn=m.innings;
+    if(!inn) continue;
+    const batters=[...(inn.bat1||[]),...(inn.bat2||[])];
+    const bowlers=[...(inn.bowl1||[]),...(inn.bowl2||[])];
+    if(batters.length||bowlers.length) return pickHot(batters,bowlers,m,false);
+  }
+  return null;
+}
+function pickHot(batters,bowlers,match,isLive){
+  const b=batters.filter(x=>x&&x.name).sort((a,b2)=>(b2.runs||0)-(a.runs||0))[0];
+  const w=bowlers.filter(x=>x&&x.name&&(x.wickets||0)>0).sort((a,b2)=>(b2.wickets||0)-(a.wickets||0)||(a.economy||99)-(b2.economy||99))[0]
+        ||bowlers.filter(x=>x&&x.name).sort((a,b2)=>(a.economy||99)-(b2.economy||99))[0];
+  if(!b&&!w) return null;
+  let type='bat',data=b;
+  if(!b&&w){type='bowl';data=w;}
+  else if(b&&w&&(w.wickets||0)>=3&&(b.runs||0)<40){type='bowl';data=w;}
+  return{type,data,match,isLive};
+}
+function renderHotPlayer(){
+  const wrap=document.getElementById('hotWrap');
+  const hot=computeHotPlayer();
+  if(!hot){wrap.innerHTML='';return;}
+  const{type,data,match,isLive}=hot;
+  const badge=isLive?'🔴 Live Match Star':'🔥 Match Performer';
+  let statsHtml='';
+  if(type==='bat'){
+    const sr=data.balls>0?((data.runs/data.balls)*100).toFixed(1):'—';
+    statsHtml=`<div><div class="hsv">${data.runs}</div><div class="hsl2">Runs</div></div><div><div class="hsv">${data.balls>0?`(${data.balls})`:'—'}</div><div class="hsl2">Balls</div></div>${data.fours?`<div><div class="hsv">${data.fours}</div><div class="hsl2">4s</div></div>`:''} ${data.sixes?`<div><div class="hsv">${data.sixes}</div><div class="hsl2">6s</div></div>`:''}<div><div class="hsv">${sr}</div><div class="hsl2">SR</div></div>`;
+  } else {
+    const ov=data.ballsBowled?`${Math.floor(data.ballsBowled/6)}.${data.ballsBowled%6}`:'0.0';
+    statsHtml=`<div><div class="hsv">${ov}</div><div class="hsl2">Overs</div></div><div><div class="hsv">${data.wickets||0}</div><div class="hsl2">Wkts</div></div><div><div class="hsv">${data.runsConceded||0}</div><div class="hsl2">Runs</div></div><div><div class="hsv">${data.economy?(data.economy).toFixed(2):'—'}</div><div class="hsl2">Econ</div></div>`;
+  }
+  wrap.innerHTML=`
+    <div class="stit"><h2>🔥 <span>Hot</span> Player</h2></div>
+    <div class="hotcard">
+      <div class="hotav">${type==='bat'?'🏏':'🎯'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="hotbadge">${badge}</div>
+        <div class="hotname">${data.name}</div>
+        <div class="hotteam">${data.team||''} · ${type==='bat'?'Batsman':'Bowler'}</div>
+        <div style="font-size:.62rem;color:var(--mt);margin-top:2px">${match.t1} vs ${match.t2}</div>
+        <div class="hotstats">${statsHtml}</div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────
+// LIVE CARD (home page)
+// ─────────────────────────────────────────
+function renderLiveCard(){
+  const wrap=document.getElementById('liveWrap');
+  const liveMatch=MATCHES.find(m=>m.status==='live');
+  if(!liveMatch){wrap.innerHTML='';return;}
+  const lv=LIVE&&LIVE.matchId===liveMatch.id?LIVE:null;
+  const runs=lv?lv.runs:0,wkts=lv?lv.wickets:0,balls=lv?lv.balls:0;
+  const ov=Math.floor(balls/6),bl=balls%6;
+  const crr=balls>0?(runs/(balls/6)).toFixed(2):'0.00';
+  const battingTeam=lv&&lv.innings===2?liveMatch.t2:liveMatch.t1;
+  const fieldingTeam=lv&&lv.innings===2?liveMatch.t1:liveMatch.t2;
+  const str=lv&&lv.striker;
+  const non=lv&&lv.nonstriker;
+  const inn2info=lv&&lv.innings===2&&lv.target?`<div style="font-size:.72rem;color:var(--or);text-align:center;margin-top:6px;font-weight:600;padding:5px;background:rgba(255,140,0,.08);border-radius:6px">Target: ${lv.target} · Need ${lv.target-runs} off ${(liveMatch.overs||16)*6-balls} balls</div>`:'';
+  const last6=(lv&&lv.lastBalls?lv.lastBalls.slice(-6):[]).map(b=>{
+    const c=b==='W'?'var(--red)':b==='Wd'||b==='Nb'?'var(--or)':b==='6'?'var(--ac2)':b==='4'?'var(--gold)':'var(--dm)';
+    return`<span class="ball-dot" style="color:${c}">${b}</span>`;
+  }).join('');
+  wrap.innerHTML=`
+    <div class="stit"><h2>🔴 <span>Live</span></h2><span class="smore" onclick="goTo('live')">Full Score →</span></div>
+    <div class="lcard">
+      <div class="lc-h">
+        <span style="font-size:.7rem;color:var(--dm);letter-spacing:1px">MATCH ${liveMatch.no||''} · ${(liveMatch.group||liveMatch.stage||'').toUpperCase()} · INN ${lv?lv.innings:1}</span>
+        <span class="lbadge show">LIVE</span>
+      </div>
+      <div class="lc-b">
+        <div class="lc-score-row">
+          <div><div class="lct-n">${battingTeam.toUpperCase()}</div><div class="lct-s">${runs}/${wkts}</div><div class="lct-ov">${ov}.${bl} ov</div></div>
+          <div class="lcvs">VS</div>
+          <div><div class="lct-n">${fieldingTeam.toUpperCase()}</div><div class="lct-s dim">${lv&&lv.innings===2&&liveMatch.s1?liveMatch.s1:'—'}</div><div class="lct-ov">${lv&&lv.innings===2?'1st inn':'yet to bat'}</div></div>
+        </div>
+        ${inn2info}
+        <div class="lc-stats">
+          <div class="lcst"><div class="lcst-v">${crr}</div><div class="lcst-l">CRR</div></div>
+          <div class="lcst"><div class="lcst-v">${lv&&lv.innings===2&&lv.target&&balls>0?((lv.target-runs)/(((liveMatch.overs||16)*6-balls)/6)).toFixed(2):'—'}</div><div class="lcst-l">RRR</div></div>
+          <div class="lcst"><div class="lcst-v">${lv&&lv.extras?(lv.extras.wide||0)+(lv.extras.noball||0):0}</div><div class="lcst-l">Extras</div></div>
+        </div>
+        <div class="batter-row">
+          <div class="bat-box str">
+            <div class="bat-name">${str&&str.name?str.name:'—'} <span style="font-size:.58rem;background:var(--b2);border-radius:3px;padding:1px 4px;color:var(--gold)">STRIKE</span></div>
+            <div class="bat-score">${str&&str.name?`${str.runs}(${str.balls})`:'—'}</div>
+            <div class="bat-detail">${str&&str.name?`4s:${str.fours||0} 6s:${str.sixes||0} SR:${str.balls>0?((str.runs/str.balls)*100).toFixed(0):'—'}`:''}</div>
+          </div>
+          <div class="bat-box">
+            <div class="bat-name">${non&&non.name?non.name:'—'}</div>
+            <div class="bat-score">${non&&non.name?`${non.runs}(${non.balls})`:'—'}</div>
+            <div class="bat-detail">${non&&non.name?`4s:${non.fours||0} 6s:${non.sixes||0}`:''}</div>
+          </div>
+        </div>
+        ${last6?`<div class="ball-row">${last6}</div>`:''}
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────
+// LIVE PAGE (full scorecard)
+// ─────────────────────────────────────────
+function renderLivePage(){
+  const el=document.getElementById('livePageContent');
+  const liveMatch=MATCHES.find(m=>m.status==='live');
+
+  if(!liveMatch){
+    // Show last completed match
+    const last=MATCHES.filter(m=>m.status==='completed').sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    if(last&&last.highlights){
+      const h=last.highlights;
+      el.innerHTML=`
+        <div style="margin:14px;background:linear-gradient(135deg,#0a1628,#111d3a);border:1px solid rgba(240,192,64,.3);border-radius:16px;overflow:hidden">
+          <div style="background:rgba(0,255,136,.08);padding:11px 16px;border-bottom:1px solid rgba(0,255,136,.15);display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:.62rem;color:var(--mt);letter-spacing:1px">LAST MATCH</div><div style="font-family:'Bebas Neue';font-size:1.05rem;color:var(--tx);margin-top:2px">${last.t1} vs ${last.t2}</div></div>
+            <span class="spill s-completed">✅ Done</span>
+          </div>
+          <div style="padding:14px 16px">
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;text-align:center;margin-bottom:12px">
+              <div><div style="font-family:'Bebas Neue';font-size:1rem;color:var(--tx)">${last.t1.toUpperCase()}</div><div style="font-family:'Orbitron';font-size:1.4rem;color:var(--gold);font-weight:900">${last.s1||'—'}</div></div>
+              <div style="font-family:'Bebas Neue';font-size:1rem;color:var(--mt)">VS</div>
+              <div><div style="font-family:'Bebas Neue';font-size:1rem;color:var(--tx)">${last.t2.toUpperCase()}</div><div style="font-family:'Orbitron';font-size:1.4rem;color:var(--ac2);font-weight:900">${last.s2||'—'}</div></div>
+            </div>
+            <div style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:8px;padding:10px;text-align:center;margin-bottom:12px">
+              <div style="font-family:'Bebas Neue';font-size:1.2rem;color:var(--ac2);letter-spacing:1px">🏆 ${last.result||'—'}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              ${h.topBatter?`<div style="background:rgba(240,192,64,.07);border:1px solid var(--b2);border-radius:10px;padding:10px"><div style="font-size:.6rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">🏏 Top Bat</div><div style="font-weight:700;color:var(--tx);font-size:.88rem">${h.topBatter.name}</div><div style="font-family:'Orbitron';font-size:1.1rem;color:var(--gold);font-weight:900;margin:3px 0">${h.topBatter.runs}<span style="font-size:.7rem;color:var(--dm)">(${h.topBatter.balls})</span></div><div style="font-size:.68rem;color:var(--dm)">4s:${h.topBatter.fours||0} · 6s:${h.topBatter.sixes||0} · SR:${h.topBatter.sr||'—'}</div></div>`:''}
+              ${h.topBowler?`<div style="background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.25);border-radius:10px;padding:10px"><div style="font-size:.6rem;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">🎯 Top Bowl</div><div style="font-weight:700;color:var(--tx);font-size:.88rem">${h.topBowler.name}</div><div style="font-family:'Orbitron';font-size:1.1rem;color:var(--red);font-weight:900;margin:3px 0">${h.topBowler.wickets}/${h.topBowler.runs}</div><div style="font-size:.68rem;color:var(--dm)">${h.topBowler.overs}ov · Econ:${h.topBowler.eco}</div></div>`:''}
+            </div>
+          </div>
+        </div>`;
+      return;
+    }
+    el.innerHTML='<div class="empty"><div class="empty-ic">🔴</div><div class="empty-tx">No live match.<br><strong>Admin</strong> starts from admin panel.</div></div>';
+    return;
+  }
+
+  const lv=LIVE&&LIVE.matchId===liveMatch.id?LIVE:null;
+  const runs=lv?lv.runs:0,wkts=lv?lv.wickets:0,balls=lv?lv.balls:0;
+  const ov=Math.floor(balls/6),bl=balls%6;
+  const crr=balls>0?(runs/(balls/6)).toFixed(2):'0.00';
+  const tgt=lv&&lv.innings===2&&lv.target?lv.target:null;
+  const rrr=tgt&&balls<(liveMatch.overs||16)*6?((tgt-runs)/(((liveMatch.overs||16)*6-balls)/6)).toFixed(2):'—';
+  const battingTeam=lv&&lv.innings===2?liveMatch.t2:liveMatch.t1;
+  const fieldingTeam=lv&&lv.innings===2?liveMatch.t1:liveMatch.t2;
+
+  // Build batter/bowler lists
+  const batters=Object.values(lv&&lv.batters?lv.batters:{});
+  const bowlers=Object.values(lv&&lv.bowlers?lv.bowlers:{});
+  const str=lv&&lv.striker;
+  const non=lv&&lv.nonstriker;
+  const bowl=lv&&lv.currentBowler;
+  // Merge in-play into list
+  const allBatters=[...batters];
+  if(str&&str.name&&!allBatters.find(b=>b.name===str.name)) allBatters.unshift({...str,out:false});
+  if(non&&non.name&&!allBatters.find(b=>b.name===non.name)) allBatters.splice(1,0,{...non,out:false});
+  // Sort: in-play first, then dismissed by highest score
+  allBatters.sort((a,b2)=>{
+    if(!a.out&&b2.out) return-1; if(a.out&&!b2.out) return 1;
+    return(b2.runs||0)-(a.runs||0);
+  });
+  const allBowlers=[...bowlers];
+  if(bowl&&bowl.name&&!allBowlers.find(b=>b.name===bowl.name)) allBowlers.unshift(bowl);
+
+  const lastBalls=(lv&&lv.lastBalls?lv.lastBalls.slice(-12):[]).map(b=>{
+    const c=b==='W'?'var(--red)':b==='Wd'||b==='Nb'?'var(--or)':b==='6'?'var(--ac2)':b==='4'?'var(--gold)':'var(--dm)';
+    return`<span class="ball-dot" style="width:28px;height:28px;font-size:.7rem;color:${c}">${b}</span>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div style="margin:14px;background:var(--d2);border:1px solid var(--b2);border-radius:16px;overflow:hidden">
+      <div style="background:linear-gradient(90deg,rgba(240,192,64,.1),rgba(240,192,64,.03));padding:12px 16px;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:.62rem;color:var(--mt);letter-spacing:1px">MATCH ${liveMatch.no||''} · ${(liveMatch.group||liveMatch.stage||'').toUpperCase()} · INN ${lv?lv.innings:1}</div>
+          <div style="font-family:'Bebas Neue';font-size:1.05rem;color:var(--tx);letter-spacing:1px;margin-top:2px">${liveMatch.t1} vs ${liveMatch.t2}</div>
+          ${liveMatch.venue?`<div style="font-size:.62rem;color:var(--mt);margin-top:1px">📍 ${liveMatch.venue}</div>`:''}
+        </div>
+        <span class="lbadge show">LIVE</span>
+      </div>
+      <div style="padding:14px 16px 8px">
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;text-align:center">
+          <div><div class="lct-n">${battingTeam.toUpperCase()}</div><div class="lct-s">${runs}/${wkts}</div><div class="lct-ov">${ov}.${bl} ov</div></div>
+          <div class="lcvs">VS</div>
+          <div><div class="lct-n">${fieldingTeam.toUpperCase()}</div><div class="lct-s dim">${lv&&lv.innings===2&&liveMatch.s1?liveMatch.s1:'—'}</div><div class="lct-ov">${lv&&lv.innings===2?'1st inn':'yet to bat'}</div></div>
+        </div>
+        ${tgt?`<div style="text-align:center;margin-top:8px;padding:6px;background:rgba(255,140,0,.08);border-radius:8px;font-size:.76rem;color:var(--or);font-weight:600">Target: ${tgt} · Need ${tgt-runs} off ${(liveMatch.overs||16)*6-balls} balls</div>`:''}
+        <div class="lc-stats" style="margin-top:10px">
+          <div class="lcst"><div class="lcst-v">${crr}</div><div class="lcst-l">CRR</div></div>
+          <div class="lcst"><div class="lcst-v">${rrr}</div><div class="lcst-l">RRR</div></div>
+          <div class="lcst"><div class="lcst-v">${lv&&lv.extras?(lv.extras.wide||0)+(lv.extras.noball||0):0}</div><div class="lcst-l">Extras</div></div>
+        </div>
+        ${lastBalls?`<div class="ball-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--b1)">${lastBalls}</div>`:''}
+      </div>
+
+      <!-- BATTING SCORECARD -->
+      ${allBatters.length?`
+      <div style="padding:6px 16px 12px">
+        <div style="font-size:.62rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px">🏏 Batting — ${battingTeam}</div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.78rem">
+          <thead><tr>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1);text-align:left">Batter</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">R</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">B</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">4s</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">6s</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">SR</th>
+          </tr></thead>
+          <tbody>${allBatters.map(b=>{
+            const isStr=str&&str.name===b.name&&!b.out;
+            const isNon=non&&non.name===b.name&&!b.out;
+            const current=isStr||isNon;
+            // Use live data for current batters
+            const bdata=isStr?str:isNon?non:b;
+            const sr=bdata.balls>0?((bdata.runs/bdata.balls)*100).toFixed(1):'—';
+            return`<tr style="border-bottom:1px solid rgba(240,192,64,.05);${current?'background:rgba(240,192,64,.04)':''}">
+              <td style="padding:8px">
+                <div style="font-weight:600;color:var(--tx)">${bdata.name}${isStr?'*':''}</div>
+                <div style="font-size:.6rem;color:var(--mt)">${bdata.out?bdata.how||'out':'batting'}</div>
+              </td>
+              <td style="padding:8px;text-align:center;font-family:'Orbitron';font-size:.82rem;color:${bdata.out?'var(--dm)':'var(--gold)'}">${bdata.runs||0}</td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${bdata.balls||0}</td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${bdata.fours||0}</td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${bdata.sixes||0}</td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${sr}</td>
+            </tr>`;}).join('')}
+          </tbody>
+        </table></div>
+      </div>`:''}
+
+      <!-- BOWLING SCORECARD -->
+      ${allBowlers.length?`
+      <div style="padding:6px 16px 14px">
+        <div style="font-size:.62rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px">🎯 Bowling — ${fieldingTeam}</div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.78rem">
+          <thead><tr>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1);text-align:left">Bowler</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">O</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">R</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">W</th>
+            <th style="background:var(--d3);padding:6px 8px;color:var(--dm);font-size:.58rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--b1)">Econ</th>
+          </tr></thead>
+          <tbody>${allBowlers.map(b=>{
+            const isCur=bowl&&bowl.name===b.name;
+            const bdata=isCur?bowl:b;
+            const ov2=bdata.ballsBowled?`${Math.floor(bdata.ballsBowled/6)}.${bdata.ballsBowled%6}`:'0.0';
+            return`<tr style="border-bottom:1px solid rgba(240,192,64,.05);${isCur?'background:rgba(255,59,92,.04)':''}">
+              <td style="padding:8px"><div style="font-weight:600;color:var(--tx)">${bdata.name}${isCur?' ◀':''}</div></td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${ov2}</td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${bdata.runsConceded||0}</td>
+              <td style="padding:8px;text-align:center;font-family:'Orbitron';font-size:.82rem;color:var(--red)">${bdata.wickets||0}</td>
+              <td style="padding:8px;text-align:center;color:var(--dm)">${bdata.economy?(bdata.economy).toFixed(2):'—'}</td>
+            </tr>`;}).join('')}
+          </tbody>
+        </table></div>
+      </div>`:''}
+    </div>`;
+}
+
+// ─────────────────────────────────────────
+// SCHEDULE
+// ─────────────────────────────────────────
+const STAGES=[
+  {key:'group',label:'Group Stage Matches',icon:'🏏'},
+  {key:'prequarter',label:'Pre-Quarter Finals',icon:'⚔️'},
+  {key:'quarter',label:'Quarter Finals',icon:'🥊'},
+  {key:'semi',label:'Semi Finals',icon:'🔥'},
+  {key:'final',label:'Final',icon:'🏆'},
+];
+function renderSchedule(){
+  const el=document.getElementById('scheduleContainer');
+  if(!MATCHES.length){el.innerHTML='<div class="empty"><div class="empty-ic">📅</div><div class="empty-tx">No matches yet.</div></div>';return;}
+  let html='';
+  STAGES.forEach(stage=>{
+    const sm=MATCHES.filter(m=>m.stage===stage.key&&m.status!=='postponed'&&m.status!=='cancelled');
+    if(!sm.length) return;
+    if(stage.key==='group'){
+      const grpNames=[...new Set(sm.map(m=>m.group||'Other'))];
+      grpNames.forEach(gn=>html+=buildStageTable(gn,sm.filter(m=>m.group===gn),'🏏'));
+    } else html+=buildStageTable(stage.label,sm,stage.icon);
+  });
+  const sp=MATCHES.filter(m=>m.status==='postponed'||m.status==='cancelled');
+  if(sp.length) html+=buildStageTable('Postponed / Cancelled',sp,'📅');
+  el.innerHTML=html;
+}
+function buildStageTable(label,matches,icon){
+  return`<div class="stage-sec">
+    <div class="stage-h"><span class="stage-ic">${icon}</span><span class="stage-nm">${label}</span><span class="stage-ct">${matches.length} match${matches.length!==1?'es':''}</span></div>
+    <div style="overflow-x:auto"><table class="stbl">
+      <thead><tr><th class="la" style="width:36px">#</th><th class="la">Teams &amp; Result</th><th class="la">Date &amp; Time</th><th class="la">Venue</th><th>Status</th></tr></thead>
+      <tbody>${matches.map(m=>{
+        const hl=m.highlights||null;
+        return`<tr>
+          <td><div class="msno ${m.status==='live'?'lv':''}">${m.no||'—'}</div></td>
+          <td><div class="tvs">
+            <div class="tv1">${m.t1}</div><div class="tvsep">vs</div><div class="tv2">${m.t2}</div>
+            ${m.s1?`<div class="tvscore">${m.s1}${m.s2&&m.s2!=='—'?' | '+m.s2:''}</div>`:''}
+            ${m.result&&m.status==='completed'?`<div class="tvres">✅ ${m.result}</div>`:''}
+            ${m.result&&m.status!=='completed'&&m.result!=='In Progress'?`<div class="tvnote">${m.result}</div>`:''}
+            ${hl&&hl.topBatter?`<div class="tvhl">🏏 ${hl.topBatter.name} ${hl.topBatter.runs}(${hl.topBatter.balls}) SR:${hl.topBatter.sr}</div>`:''}
+            ${hl&&hl.topBowler?`<div class="tvhlb">🎯 ${hl.topBowler.name} ${hl.topBowler.wickets}/${hl.topBowler.runs} (${hl.topBowler.overs}ov)</div>`:''}
+          </div></td>
+          <td><div class="dtc"><div class="dtdate">${FD(m.date)}</div><div class="dttime">${FT(m.time)}</div><div class="dtyear">${m.year||2026}</div></div></td>
+          <td><div class="venue">${m.venue||'—'}</div></td>
+          <td style="text-align:center"><span class="spill s-${m.status}">${SL(m.status)}</span></td>
+        </tr>`;}).join('')}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+// ─────────────────────────────────────────
+// GROUPS
+// ─────────────────────────────────────────
+function renderGroups(){
+  const el=document.getElementById('groupsContainer');
+  if(!GROUPS.length){el.innerHTML='<div class="empty"><div class="empty-ic">🔢</div><div class="empty-tx">No groups yet.</div></div>';return;}
+  el.innerHTML=GROUPS.map(g=>{
+    const teamList=TEAMS.filter(t=>t.group===g.id);
+    const rows=teamList.map(t=>({...t,...getStats(t.name)})).sort((a,b)=>b.pts-a.pts||b.nrrNum-a.nrrNum);
+    return`<div class="gcard gc-${g.color||'gold'}">
+      <div class="gcard-h"><span class="gcn">${g.name}</span><span class="gcct">${teamList.length} Teams</span></div>
+      <div style="overflow-x:auto"><table class="gtbl">
+        <thead><tr><th style="width:32px">#</th><th class="la">Team</th><th>P</th><th>W</th><th>L</th><th>NR</th><th>NRR</th><th>Pts</th></tr></thead>
+        <tbody>${teamList.length?rows.map((r,i)=>`<tr>
+          <td><span class="grnk ${i<2?'q':'e'}">${i+1}</span></td>
+          <td class="la"><span class="gteam">${r.emoji||'🏏'} ${r.name}${i<2?'<span class="qdot"></span>':''}</span></td>
+          <td>${r.played}</td><td style="color:var(--ac2)">${r.won}</td><td style="color:var(--red)">${r.lost}</td>
+          <td style="color:var(--mt)">${r.nr}</td>
+          <td class="${r.nrrNum>0?'np':r.nrrNum<0?'nn':'nz'}" style="font-size:.74rem">${r.nrr}</td>
+          <td><span class="gpts">${r.pts}</span></td>
+        </tr>`).join(''):`<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--mt);font-size:.8rem">No teams in this group</td></tr>`}
+        </tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+// POINTS — per-group standings
+// ─────────────────────────────────────────
+function renderPoints(){
+  const el=document.getElementById('pointsContainer');
+  if(!GROUPS.length||!TEAMS.length){el.innerHTML='<div class="empty"><div class="empty-ic">🏆</div><div class="empty-tx">No groups/teams yet.</div></div>';return;}
+  const clrMap={gold:{bg:'rgba(240,192,64,.07)',bdr:'rgba(240,192,64,.3)',hdr:'rgba(240,192,64,.12)',col:'var(--gold)'},blue:{bg:'rgba(0,212,255,.05)',bdr:'rgba(0,212,255,.22)',hdr:'rgba(0,212,255,.09)',col:'var(--ac)'},green:{bg:'rgba(0,255,136,.04)',bdr:'rgba(0,255,136,.2)',hdr:'rgba(0,255,136,.07)',col:'var(--ac2)'},red:{bg:'rgba(255,59,92,.05)',bdr:'rgba(255,59,92,.2)',hdr:'rgba(255,59,92,.08)',col:'var(--red)'},purple:{bg:'rgba(155,89,182,.05)',bdr:'rgba(155,89,182,.2)',hdr:'rgba(155,89,182,.08)',col:'#c39bd3'},teal:{bg:'rgba(0,200,180,.05)',bdr:'rgba(0,200,180,.2)',hdr:'rgba(0,200,180,.08)',col:'#00c8b4'}};
+  let html='';
+  GROUPS.forEach(g=>{
+    const clr=clrMap[g.color||'gold']||clrMap.gold;
+    const gTeams=TEAMS.filter(t=>t.group===g.id);
+    const rows=gTeams.map(t=>({...t,...getStats(t.name)})).sort((a,b)=>b.pts-a.pts||b.nrrNum-a.nrrNum);
+    html+=`<div style="margin-bottom:16px;border-radius:14px;overflow:hidden;border:1px solid ${clr.bdr};background:${clr.bg}">
+      <div style="background:${clr.hdr};padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid ${clr.bdr}">
+        <span style="font-family:'Bebas Neue';font-size:1.15rem;letter-spacing:1px;color:${clr.col}">${g.name}</span>
+        <span style="font-size:.63rem;color:var(--mt);background:var(--d3);padding:2px 9px;border-radius:9px">${gTeams.length} Teams</span>
+      </div>
+      <div style="overflow-x:auto"><table class="ptbl" style="margin-bottom:0;border-radius:0;border:none">
+        <thead><tr><th style="width:32px">#</th><th class="la">Team</th><th>P</th><th>W</th><th>L</th><th>NR</th><th>NRR</th><th>Pts</th></tr></thead>
+        <tbody>${gTeams.length?rows.map((r,i)=>`<tr>
+          <td><span class="grnk ${i<2?'q':'e'}">${i+1}</span></td>
+          <td class="la"><span style="font-weight:700;color:var(--tx);display:flex;align-items:center;gap:5px">${r.emoji||'🏏'} ${r.name}${i<2?'<span class="qdot"></span>':''}</span></td>
+          <td>${r.played}</td><td style="color:var(--ac2)">${r.won}</td><td style="color:var(--red)">${r.lost}</td>
+          <td style="color:var(--mt)">${r.nr}</td>
+          <td class="${r.nrrNum>0?'np':r.nrrNum<0?'nn':'nz'}" style="font-size:.74rem">${r.nrr}</td>
+          <td><span class="gpts">${r.pts}</span></td>
+        </tr>`).join(''):`<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--mt);font-size:.8rem">No teams assigned</td></tr>`}
+        </tbody>
+      </table></div>
+    </div>`;
+  });
+  el.innerHTML=html+'<div style="font-size:.63rem;color:var(--mt);padding:4px 2px 8px">🟢 Top 2 per group qualify · NRR per ICC formula · Live from Firebase</div>';
+}
+
+// ─────────────────────────────────────────
+// TEAMS
+// ─────────────────────────────────────────
+const GB={gold:'rgba(240,192,64,.12);color:var(--gold);border-color:rgba(240,192,64,.3)',blue:'rgba(0,212,255,.1);color:var(--ac);border-color:rgba(0,212,255,.25)',green:'rgba(0,255,136,.08);color:var(--ac2);border-color:rgba(0,255,136,.2)',red:'rgba(255,59,92,.08);color:var(--red);border-color:rgba(255,59,92,.2)',purple:'rgba(155,89,182,.08);color:#c39bd3;border-color:rgba(155,89,182,.2)',teal:'rgba(0,200,180,.08);color:#00c8b4;border-color:rgba(0,200,180,.2)'};
+function renderTeams(){
+  const el=document.getElementById('teamsGrid');
+  if(!TEAMS.length){el.innerHTML='<div style="grid-column:1/-1" class="empty"><div class="empty-ic">🛡</div><div class="empty-tx">No teams yet.</div></div>';return;}
+  el.innerHTML=TEAMS.map(t=>{
+    const grp=GROUPS.find(g=>g.id===t.group);
+    const bs=GB[grp?.color||'gold']||GB.gold;
+    return`<div class="tcard"><div class="tce">${t.emoji||'🏏'}</div><div class="tcn">${t.name}</div><div class="tcc">Capt: ${t.captain||'—'}</div><div class="tcb" style="background:${bs}">${grp?grp.name:'No Group'}</div></div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+// PLAYERS
+// ─────────────────────────────────────────
+function filterPlayers(type,btn){
+  document.querySelectorAll('.pfilt .fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); renderPlayers(type);
+}
+function renderPlayers(type){
+  const el=document.getElementById('playersList');
+  let list=type==='allround'?PLAYERS.filter(p=>p.role==='allround'):
+           type==='bowling'?PLAYERS.filter(p=>p.role==='bowling'||p.role==='allround'):
+           PLAYERS.filter(p=>p.role==='batting'||p.role==='wk'||p.role==='allround');
+  list=[...list].sort((a,b)=>type==='bowling'?(parseInt(b.wickets)||0)-(parseInt(a.wickets)||0):(parseInt(b.runs)||0)-(parseInt(a.runs)||0));
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-ic">👤</div><div class="empty-tx">No players yet.</div></div>';return;}
+  el.innerHTML=list.map((p,i)=>`
+    <div class="prow">
+      <div class="prnk">${i+1}</div>
+      <div class="prav">${p.emoji||'🏏'}</div>
+      <div class="pinfo">
+        <div class="pname">${p.name}${i===0?' 🔥':''}</div>
+        <div class="ptr">${p.team||'—'} · ${p.role==='batting'?'Batsman':p.role==='bowling'?'Bowler':p.role==='wk'?'WK-Bat':'All-Rounder'}</div>
+        <div class="psts">
+          ${type!=='bowling'?`<div><div class="psv rn">${p.runs||0}</div><div class="psl">Runs</div></div>`:''}
+          ${type!=='batting'?`<div><div class="psv wk">${p.wickets||0}W</div><div class="psl">Wkts</div></div>`:''}
+          ${p.best?`<div><div class="psv be">${p.best}</div><div class="psl">Best</div></div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────
+// POLLS
+// ─────────────────────────────────────────
+function renderPolls(){
+  const el=document.getElementById('pollsList');
+  if(!POLLS.length){el.innerHTML='<div class="empty"><div class="empty-ic">📊</div><div class="empty-tx">No polls yet.</div></div>';return;}
+  el.innerHTML=POLLS.map(poll=>{
+    const total=poll.votes?Object.values(poll.votes).reduce((a,b)=>a+b,0):0;
+    const votes=poll.votes?Object.values(poll.votes):[];
+    return`<div class="polcard">
+      <div class="polh"><div class="poltype">${poll.type||'Poll'}</div><div class="polq">${poll.question}</div></div>
+      <div class="polopts">${(poll.options||[]).map((opt,i)=>{
+        const pct=total?Math.round(((votes[i]||0)/total)*100):0;
+        const voted=poll.votedBy&&poll.votedBy[getViewerId()];
+        return`<div class="polopt ${voted?'vd':''}" onclick="vote('${poll.id}',${i})">
+          <div class="polofill" style="width:${voted?pct:0}%"></div>
+          <div class="polocon"><span class="polotx">${opt}</span>${voted?`<span class="polpct">${pct}%</span>`:''}</div>
+        </div>`;}).join('')}
+      </div>
+      <div class="polftr"><span>📊 ${total.toLocaleString()} votes</span><span>${poll.votedBy&&poll.votedBy[getViewerId()]?'✅ Voted':'👆 Tap to vote'}</span></div>
+    </div>`;
+  }).join('');
+}
+// Unique viewer ID (no signup needed, stored in localStorage)
+function getViewerId(){
+  let id=localStorage.getItem('ppl_vid');
+  if(!id){id='v'+Date.now()+Math.random().toString(36).substr(2,6);localStorage.setItem('ppl_vid',id);}
+  return id;
+}
+function vote(pollId,optIdx){
+  if(!FDB) return;
+  const poll=POLLS.find(p=>p.id===pollId);
+  if(!poll||!poll.id) return;
+  const vid=getViewerId();
+  if(poll.votedBy&&poll.votedBy[vid]){T('Already voted!');return;}
+  const curVotes=poll.votes?Object.values(poll.votes):new Array((poll.options||[]).length).fill(0);
+  while(curVotes.length<(poll.options||[]).length) curVotes.push(0);
+  curVotes[optIdx]=(curVotes[optIdx]||0)+1;
+  const updates={};
+  updates[`polls/${poll.id}/votes`]=curVotes;
+  updates[`polls/${poll.id}/votedBy/${vid}`]=true;
+  FDB.dbUpd('',updates).then(()=>T('✅ Vote recorded!'));
+}
+
+// ─────────────────────────────────────────
+// GALLERY, ORGS, RULES
+// ─────────────────────────────────────────
+function filterMedia(cat,btn){
+  document.querySelectorAll('#page-media .fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); renderGallery(cat);
+}
+function renderGallery(cat){
+  const list=cat==='all'?GALLERY:GALLERY.filter(g=>g.cat===cat);
+  const el=document.getElementById('galleryGrid');
+  if(!list.length){el.innerHTML='<div style="grid-column:1/-1" class="empty"><div class="empty-ic">📸</div><div class="empty-tx">No photos yet.</div></div>';return;}
+  el.innerHTML=list.map(g=>`<div class="mitem"><span style="font-size:2.2rem">${g.emoji||'📸'}</span><div class="mlbl">${g.label||''}</div></div>`).join('');
+}
+function renderOrgs(){
+  const el=document.getElementById('orgList');
+  if(!ORGS.length){el.innerHTML='<div class="empty"><div class="empty-ic">🎖</div><div class="empty-tx">No organisers yet.</div></div>';return;}
+  el.innerHTML=ORGS.map(o=>`<div class="orgcard"><div class="orgav">${o.emoji||'👤'}</div><div><div class="orgn">${o.name}</div><div class="orgr">${o.role}</div><div class="orgs">${o.since||''}</div></div></div>`).join('');
+}
+function renderRules(){
+  const el=document.getElementById('rulesList');
+  if(!RULES.length){el.innerHTML='<div class="empty"><div class="empty-ic">📋</div><div class="empty-tx">No rules yet.</div></div>';return;}
+  el.innerHTML=RULES.map((r,i)=>`<div class="ritem"><div class="rnum">${String(i+1).padStart(2,'0')}</div><div class="rtxt">${r}</div></div>`).join('');
+}
+
+// ─────────────────────────────────────────
+// NAV
+// ─────────────────────────────────────────
+document.getElementById('navTabs').addEventListener('click',e=>{
+  const tab=e.target.closest('.ntab');
+  if(!tab) return;
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  tab.classList.add('on');
+  document.getElementById('page-'+tab.dataset.page).classList.add('on');
+  tab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+function goTo(page){
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.toggle('on',t.dataset.page===page));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+page).classList.add('on');
+  document.querySelector(`.ntab[data-page="${page}"]`)?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// TOAST
+let tT;
+function T(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2800);}
+
+// MODAL
+function CM(id){document.getElementById(id).classList.remove('open');}
+function OM(id){document.getElementById(id).classList.add('open');}
+
+// ─────────────────────────────────────────
+// ADMIN AUTH
+// ─────────────────────────────────────────
+function openAdmin(){OM('adminModal');}
+function doLogin(){
+  const u=document.getElementById('aUser').value;
+  const p=document.getElementById('aPass').value;
+  if(u==='ppl2026'&&p==='ppl@2620'){
+    document.getElementById('aLoginF').style.display='none';
+    document.getElementById('aDash').style.display='block';
+    document.getElementById('aSuc').style.display='flex';
+    IS_ADMIN=true;
+    populateAdminLists();
+  } else {
+    const e=document.getElementById('aErr');
+    e.style.display='block';
+    setTimeout(()=>e.style.display='none',3000);
+  }
+}
+function adminOut(){
+  document.getElementById('aLoginF').style.display='block';
+  document.getElementById('aDash').style.display='none';
+  document.getElementById('aUser').value='';
+  document.getElementById('aPass').value='';
+  IS_ADMIN=false; CM('adminModal'); T('Logged out');
+}
+function populateAdminLists(){
+  renderAGrpList(); renderATeamList(); renderAMatchList();
+  renderAPlayerList(); renderAPollList(); renderAOrgList(); renderARuleList(); renderAAnnList();
+  populateLiveMatchSel(); populateSquadTeamSel();
+}
+
+// ─────────────────────────────────────────
+// SQUAD MANAGEMENT (persistent in Firebase)
+// ─────────────────────────────────────────
+function populateSquadTeamSel(){
+  const sel=document.getElementById('squadTeamSel');
+  sel.innerHTML='<option value="">— Select team —</option>'+TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+}
+function loadSquadForEdit(teamId){
+  const sec=document.getElementById('squadEditSection');
+  if(!teamId){sec.style.display='none';return;}
+  sec.style.display='block';
+  if(!FDB){return;}
+  FDB.dbGet('squads/'+teamId).then(squad=>{
+    const players=squad?Object.entries(squad).map(([pid,p])=>({pid,...p})):[];
+    document.getElementById('squadCount').textContent=players.length;
+    document.getElementById('squadCurrentList').innerHTML=players.map(p=>`
+      <div style="display:flex;align-items:center;gap:4px;background:var(--d3);border:1px solid var(--b1);border-radius:7px;padding:4px 8px">
+        <span style="font-size:.8rem;color:var(--tx)">${p.name}</span>
+        <span style="font-size:.6rem;color:var(--mt)">(${p.role})</span>
+        <button onclick="removeSquadPlayer('${teamId}','${p.pid}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.75rem;margin-left:4px">✕</button>
+      </div>`).join('');
+  });
+}
+function addSquadPlayer(){
+  const teamId=document.getElementById('squadTeamSel').value;
+  const name=document.getElementById('squadPlayerName').value.trim();
+  const role=document.getElementById('squadPlayerRole').value;
+  if(!teamId||!name){T('Select team and enter name');return;}
+  const pid=UID();
+  FDB.dbSet('squads/'+teamId+'/'+pid, {name,role}).then(()=>{
+    document.getElementById('squadPlayerName').value='';
+    loadSquadForEdit(teamId);
+    T('✅ '+name+' added to squad');
+    // Refresh squad buttons if this team is in current live match
+    if(LIVE) renderLiveSquadButtons();
+  });
+}
+function removeSquadPlayer(teamId,pid){
+  FDB.dbDel('squads/'+teamId+'/'+pid).then(()=>{
+    loadSquadForEdit(teamId);
+    T('Player removed from squad');
+    if(LIVE) renderLiveSquadButtons();
+  });
+}
+
+// ─────────────────────────────────────────
+// LIVE SCORING ENGINE
+// ─────────────────────────────────────────
+function populateLiveMatchSel(){
+  const sel=document.getElementById('liveMatchSel');
+  sel.innerHTML='<option value="">— Select upcoming match —</option>'+
+    MATCHES.filter(m=>m.status==='live'||m.status==='upcoming').map(m=>`<option value="${m.id}" ${LIVE&&LIVE.matchId===m.id?'selected':''}>[${m.no||'?'}] ${m.t1} vs ${m.t2}</option>`).join('');
+  document.getElementById('liveControls').style.display=LIVE?'block':'none';
+  if(LIVE){ syncAdminScoreDisplay(); renderLiveSquadButtons(); }
+}
+
+async function setLiveMatch(id){
+  if(!id){document.getElementById('liveControls').style.display='none';return;}
+  const m=MATCHES.find(x=>x.id===id);
+  if(!m) return;
+  // Move any existing live matches back to upcoming
+  for(const mx of MATCHES.filter(x=>x.status==='live')){
+    await FDB.dbUpd('matches/'+mx.id,{status:'upcoming'});
+  }
+  await FDB.dbUpd('matches/'+id,{status:'live'});
+  const liveState={
+    matchId:id, innings:1, runs:0, wickets:0, balls:0, target:null,
+    striker:{name:'',runs:0,balls:0,fours:0,sixes:0},
+    nonstriker:{name:'',runs:0,balls:0,fours:0,sixes:0},
+    currentBowler:{name:'',ballsBowled:0,wickets:0,runsConceded:0,economy:0},
+    batters:{}, bowlers:{}, extras:{wide:0,noball:0}, lastBalls:[],
+  };
+  await FDB.dbSet('live', liveState);
+  document.getElementById('liveControls').style.display='block';
+  await renderLiveSquadButtons();
+  // 🔔 Notify all subscribers that match has started
+  notifyMatchLive(m);
+  T(`🔴 ${m.t1} vs ${m.t2} is now LIVE!`);
+}
+
+// Load squads for both teams and render squad buttons
+async function renderLiveSquadButtons(){
+  if(!LIVE||!FDB) return;
+  const m=MATCHES.find(x=>x.id===LIVE.matchId);
+  if(!m) return;
+  const battingTeam=LIVE.innings===2?m.t2:m.t1;
+  const bowlingTeam=LIVE.innings===2?m.t1:m.t2;
+  const batTeamObj=TEAMS.find(t=>t.name===battingTeam);
+  const bowlTeamObj=TEAMS.find(t=>t.name===bowlingTeam);
+
+  const [batSquad, bowlSquad] = await Promise.all([
+    batTeamObj?FDB.dbGet('squads/'+batTeamObj.id).then(v=>v?Object.values(v):[]):Promise.resolve([]),
+    bowlTeamObj?FDB.dbGet('squads/'+bowlTeamObj.id).then(v=>v?Object.values(v):[]):Promise.resolve([]),
+  ]);
+
+  const outBatters=Object.values(LIVE.batters||{}).filter(b=>b.out).map(b=>b.name);
+  const strikerName=LIVE.striker?.name||'';
+  const nonName=LIVE.nonstriker?.name||'';
+  const bowlerName=LIVE.currentBowler?.name||'';
+
+  // Striker squad
+  const ss=document.getElementById('strikerSquad');
+  ss.innerHTML=batSquad.length?batSquad.map(p=>`
+    <button class="squad-btn ${strikerName===p.name?'sel-bat':''} ${outBatters.includes(p.name)?'out':''}"
+      onclick="selectStriker('${p.name}')" ${outBatters.includes(p.name)?'disabled':''}>
+      ${p.name}
+    </button>`).join('')+'<button class="squad-btn" onclick="selectStriker(prompt(\'Enter name:\'))">✏️ Other</button>':'<span style="font-size:.76rem;color:var(--mt)">No squad — add from Squad section above</span>';
+
+  // Non-striker squad
+  const ns=document.getElementById('nonStrikerSquad');
+  ns.innerHTML=batSquad.length?batSquad.map(p=>`
+    <button class="squad-btn ${nonName===p.name?'sel-bat':''} ${outBatters.includes(p.name)?'out':''}"
+      onclick="selectNonStriker('${p.name}')" ${outBatters.includes(p.name)?'disabled':''}>
+      ${p.name}
+    </button>`).join('')+'<button class="squad-btn" onclick="selectNonStriker(prompt(\'Enter name:\'))">✏️ Other</button>':'<span style="font-size:.76rem;color:var(--mt)">No squad</span>';
+
+  // Bowler squad
+  const bs=document.getElementById('bowlerSquad');
+  bs.innerHTML=bowlSquad.length?bowlSquad.map(p=>`
+    <button class="squad-btn ${bowlerName===p.name?'sel-bowl':''}"
+      onclick="selectBowler('${p.name}')">
+      ${p.name}
+    </button>`).join('')+'<button class="squad-btn" onclick="selectBowler(prompt(\'Enter name:\'))">✏️ Other</button>':'<span style="font-size:.76rem;color:var(--mt)">No squad</span>';
+}
+
+function selectStriker(name){
+  if(!name||!LIVE) return;
+  if(LIVE.nonstriker&&LIVE.nonstriker.name===name){T('Already non-striker — swap instead');return;}
+  const old=LIVE.striker?{...LIVE.striker}:null;
+  if(old&&old.name) flushBatter(old);
+  const existing=Object.values(LIVE.batters||{}).find(b=>b.name===name&&!b.out);
+  LIVE.striker=existing?{...existing}:{name,runs:0,balls:0,fours:0,sixes:0};
+  saveLiveAndSync(); renderLiveSquadButtons();
+  T(`⚡ ${name} now on strike`);
+}
+function selectNonStriker(name){
+  if(!name||!LIVE) return;
+  if(LIVE.striker&&LIVE.striker.name===name){T('Already on strike — swap instead');return;}
+  const old=LIVE.nonstriker?{...LIVE.nonstriker}:null;
+  if(old&&old.name) flushBatter(old);
+  const existing=Object.values(LIVE.batters||{}).find(b=>b.name===name&&!b.out);
+  LIVE.nonstriker=existing?{...existing}:{name,runs:0,balls:0,fours:0,sixes:0};
+  saveLiveAndSync(); renderLiveSquadButtons();
+  T(`🏏 ${name} is non-striker`);
+}
+function selectBowler(name){
+  if(!name||!LIVE) return;
+  if(LIVE.currentBowler&&LIVE.currentBowler.name===name){T('Same bowler already bowling');return;}
+  const old=LIVE.currentBowler?{...LIVE.currentBowler}:null;
+  if(old&&old.name) flushBowler(old);
+  const existing=Object.values(LIVE.bowlers||{}).find(b=>b.name===name);
+  LIVE.currentBowler=existing?{...existing}:{name,ballsBowled:0,wickets:0,runsConceded:0,economy:0};
+  saveLiveAndSync(); renderLiveSquadButtons();
+  T(`🎯 ${name} bowling`);
+}
+
+// ─────────────────────────────────────────
+// SCORE PAD ACTIONS
+// ─────────────────────────────────────────
+function addRun(r){
+  if(!LIVE) return;
+  LIVE.runs+=r; LIVE.balls++;
+  if(LIVE.striker){LIVE.striker.runs+=r;LIVE.striker.balls++;if(r===4)LIVE.striker.fours++;if(r===6)LIVE.striker.sixes++;}
+  if(LIVE.currentBowler){LIVE.currentBowler.ballsBowled++;LIVE.currentBowler.runsConceded+=r;recalcEco();}
+  if(r%2!==0) swapStrike();
+  const endOv=LIVE.balls%6===0;
+  if(endOv) swapStrike();
+  LIVE.lastBalls.push(r===0?'•':String(r)); if(LIVE.lastBalls.length>24)LIVE.lastBalls.shift();
+  saveLiveAndSync();
+  const score=`${LIVE.runs}/${LIVE.wickets}`;
+  const overs=`${Math.floor(LIVE.balls/6)}.${LIVE.balls%6}`;
+  let msg=r===4?`🏏 FOUR! ${LIVE.nonstriker?.name||''}`:r===6?`💥 SIX! ${LIVE.nonstriker?.name||''}`:r===0?`• Dot — ${LIVE.striker?.name||''} on strike`:`${r} run${r>1?'s':''}`;
+  if(endOv) msg+=` · Over ${Math.floor(LIVE.balls/6)} done! Change bowler?`;
+  T(msg);
+  // Push for boundaries only (not every ball — would flood notifications)
+  if(r===4||r===6) notifyBoundary(r, LIVE.nonstriker?.name||'Batter', score);
+}
+function addExtra(type){
+  if(!LIVE) return;
+  LIVE.runs+=1; LIVE.extras[type==='WD'?'wide':'noball']=(LIVE.extras[type==='WD'?'wide':'noball']||0)+1;
+  if(LIVE.currentBowler){LIVE.currentBowler.runsConceded+=1;recalcEco();}
+  LIVE.lastBalls.push(type==='WD'?'Wd':'Nb'); if(LIVE.lastBalls.length>24)LIVE.lastBalls.shift();
+  saveLiveAndSync();
+  T(type==='WD'?'⚠️ Wide +1':'⚠️ No Ball — Free Hit!');
+}
+function addWkt(type){
+  if(!LIVE) return;
+  LIVE.wickets++; LIVE.balls++;
+  if(LIVE.currentBowler){LIVE.currentBowler.ballsBowled++;LIVE.currentBowler.wickets++;recalcEco();}
+  const outName=LIVE.striker?.name||'Batter';
+  if(LIVE.striker){
+    LIVE.striker.balls++;
+    const outBat={...LIVE.striker,out:true,how:type};
+    flushBatter(outBat);
+    LIVE.striker={name:'',runs:0,balls:0,fours:0,sixes:0};
+  }
+  LIVE.lastBalls.push('W'); if(LIVE.lastBalls.length>24)LIVE.lastBalls.shift();
+  if(LIVE.wickets>=10){endInningsOrMatch();return;}
+  saveLiveAndSync();
+  renderLiveSquadButtons();
+  // Push notification for wicket
+  const score=`${LIVE.runs}/${LIVE.wickets}`;
+  const overs=`${Math.floor(LIVE.balls/6)}.${LIVE.balls%6}`;
+  notifyWicket(outName, type, score, overs);
+  T(`🎯 ${outName} out! ${type} — pick new batsman ↑`);
+}
+function manualRotate(){
+  if(!LIVE) return;
+  swapStrike(); saveLiveAndSync(); renderLiveSquadButtons();
+  T(`🔄 Strike → ${LIVE.striker?.name||'Batter'}`);
+}
+function swapStrike(){
+  if(!LIVE) return;
+  const tmp=LIVE.striker; LIVE.striker=LIVE.nonstriker; LIVE.nonstriker=tmp;
+}
+function recalcEco(){
+  if(!LIVE.currentBowler) return;
+  const ov=LIVE.currentBowler.ballsBowled/6;
+  LIVE.currentBowler.economy=ov>0?(LIVE.currentBowler.runsConceded/ov):0;
+}
+function flushBatter(batter){
+  if(!batter||!batter.name||!LIVE) return;
+  if(!LIVE.batters) LIVE.batters={};
+  LIVE.batters[batter.name.replace(/[.#$\[\]]/g,'_')]={...batter};
+}
+function flushBowler(bowler){
+  if(!bowler||!bowler.name||!LIVE) return;
+  if(!LIVE.bowlers) LIVE.bowlers={};
+  LIVE.bowlers[bowler.name.replace(/[.#$\[\]]/g,'_')]={...bowler};
+}
+
+// ─────────────────────────────────────────
+// INNINGS / MATCH END
+// ─────────────────────────────────────────
+async function endInningsOrMatch(){
+  if(!LIVE||!FDB) return;
+  flushBatter({...LIVE.striker}); flushBatter({...LIVE.nonstriker}); flushBowler({...LIVE.currentBowler});
+  const m=MATCHES.find(x=>x.id===LIVE.matchId);
+  const scoreStr=`${LIVE.runs}/${LIVE.wickets} (${Math.floor(LIVE.balls/6)}.${LIVE.balls%6})`;
+
+  if(LIVE.innings===1&&m){
+    const inn1={batters:LIVE.batters||{},bowlers:LIVE.bowlers||{}};
+    await FDB.dbSet('matches/'+m.id+'/inn1',inn1);
+    await FDB.dbUpd('matches/'+m.id,{s1:scoreStr});
+    // Reset for 2nd innings
+    const liveState2={
+      matchId:LIVE.matchId, innings:2, runs:0, wickets:0, balls:0,
+      target:LIVE.runs+1,
+      striker:{name:'',runs:0,balls:0,fours:0,sixes:0},
+      nonstriker:{name:'',runs:0,balls:0,fours:0,sixes:0},
+      currentBowler:{name:'',ballsBowled:0,wickets:0,runsConceded:0,economy:0},
+      batters:{}, bowlers:{}, extras:{wide:0,noball:0}, lastBalls:[],
+    };
+    await FDB.dbSet('live',liveState2);
+    await renderLiveSquadButtons();
+    // 🔔 Notify innings complete
+    notifyInningsEnd(m.t1, scoreStr, LIVE.runs+1);
+    T(`✅ 1st Inn done! ${m.t1}: ${scoreStr}. Target: ${LIVE.runs+1}. Set 2nd inn players.`);
+  } else if(m){
+    await finishMatch(m,scoreStr);
+  }
+}
+
+async function endLiveMatch(){
+  if(!LIVE||!FDB) return;
+  flushBatter({...LIVE.striker}); flushBatter({...LIVE.nonstriker}); flushBowler({...LIVE.currentBowler});
+  const m=MATCHES.find(x=>x.id===LIVE.matchId);
+  const scoreStr=`${LIVE.runs}/${LIVE.wickets} (${Math.floor(LIVE.balls/6)}.${LIVE.balls%6})`;
+  if(m){
+    if(LIVE.innings===1) await FDB.dbUpd('matches/'+m.id,{s1:scoreStr});
+    else await finishMatch(m,scoreStr);
+  }
+  await FDB.dbDel('live');
+  T('✅ Live ended.'+(m?.result?' Result: '+m.result:''));
+}
+
+async function finishMatch(m,scoreStr){
+  await FDB.dbUpd('matches/'+m.id,{s2:scoreStr});
+  const s1=parseScore(m.s1||'',m.overs||16);
+  const s2=parseScore(scoreStr,m.overs||16);
+  let result='';
+  if(s1&&s2){
+    if(s2.runs>s1.runs) result=`${m.t2} won by ${10-s2.wkts} wicket${10-s2.wkts!==1?'s':''}`;
+    else if(s1.runs>s2.runs) result=`${m.t1} won by ${s1.runs-s2.runs} runs`;
+    else result='Match Tied';
+  }
+  const inn1=await FDB.dbGet('matches/'+m.id+'/inn1')||{batters:{},bowlers:{}};
+  const allBatters=[...Object.values(inn1.batters||{}),...Object.values(LIVE.batters||{})];
+  const allBowlers=[...Object.values(inn1.bowlers||{}),...Object.values(LIVE.bowlers||{})];
+  const topBat=allBatters.filter(b=>b.name).sort((a,b2)=>(b2.runs||0)-(a.runs||0))[0];
+  const topBowl=allBowlers.filter(b=>b.name&&(b.wickets||0)>0).sort((a,b2)=>(b2.wickets||0)-(a.wickets||0))[0];
+  const highlights={
+    topBatter:topBat?{name:topBat.name,runs:topBat.runs||0,balls:topBat.balls||0,fours:topBat.fours||0,sixes:topBat.sixes||0,sr:topBat.balls>0?((topBat.runs/topBat.balls)*100).toFixed(1):'—'}:null,
+    topBowler:topBowl?{name:topBowl.name,wickets:topBowl.wickets||0,runs:topBowl.runsConceded||0,overs:`${Math.floor((topBowl.ballsBowled||0)/6)}.${(topBowl.ballsBowled||0)%6}`,eco:(topBowl.economy||0).toFixed(2)}:null,
+    t1score:m.s1,t2score:scoreStr
+  };
+  await FDB.dbUpd('matches/'+m.id,{result,status:'completed',highlights});
+  await FDB.dbDel('live');
+  // 🔔 Notify match result to all subscribers
+  if (result) notifyMatchResult(m, result);
+  T('🏆 Match over! '+result);
+}
+
+// Save LIVE state to Firebase (all viewers see instantly)
+function saveLiveAndSync(){
+  if(!LIVE||!FDB) return;
+  flushBatter({...LIVE.striker}); flushBatter({...LIVE.nonstriker}); flushBowler({...LIVE.currentBowler});
+  FDB.dbSet('live',LIVE);
+}
+function syncAdminScoreDisplay(){
+  if(!LIVE) return;
+  const ov=Math.floor(LIVE.balls/6),bl=LIVE.balls%6;
+  const m=MATCHES.find(x=>x.id===LIVE.matchId);
+  const team=m?((LIVE.innings===2?m.t2:m.t1)):'';
+  document.getElementById('admScore').textContent=`${LIVE.runs} / ${LIVE.wickets}`;
+  document.getElementById('admOvers').textContent=`${ov}.${bl} overs · ${team}`;
+  const str=LIVE.striker; const non=LIVE.nonstriker; const bow=LIVE.currentBowler;
+  const sd=document.getElementById('admStrikerDisp'); if(sd) sd.textContent=`⚡ ${str?.name||'— Striker —'}`;
+  const ss=document.getElementById('admStrikerScore'); if(ss) ss.textContent=str?.name?`${str.runs}(${str.balls}) 4s:${str.fours||0} 6s:${str.sixes||0}`:'';
+  const nd=document.getElementById('admNonDisp'); if(nd) nd.textContent=`${non?.name||'— Non-Striker —'}`;
+  const ns=document.getElementById('admNonScore'); if(ns) ns.textContent=non?.name?`${non.runs}(${non.balls})`:'';
+  const bd=document.getElementById('admBowlerDisp'); if(bd) bd.textContent=`🎯 ${bow?.name||'— Bowler —'}`;
+  const bs2=document.getElementById('admBowlerScore');
+  if(bs2&&bow?.name){const ov2=`${Math.floor((bow.ballsBowled||0)/6)}.${(bow.ballsBowled||0)%6}`;bs2.textContent=`${ov2}ov ${bow.runsConceded||0}R ${bow.wickets||0}W Eco:${(bow.economy||0).toFixed(1)}`;}
+}
+
+// ─────────────────────────────────────────
+// ADMIN — GROUPS
+// ─────────────────────────────────────────
+function renderAGrpList(){
+  document.getElementById('aGrpList').innerHTML=GROUPS.length?
+    GROUPS.map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:9px 12px">
+      <div><div style="font-weight:600;font-size:.84rem;color:var(--tx)">${g.name}</div><div style="font-size:.66rem;color:var(--mt)">${TEAMS.filter(t=>t.group===g.id).length} teams · ${g.color||'gold'}</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btns" style="padding:4px 10px;font-size:.71rem" onclick="editGrp('${g.id}')">Edit</button>
+        <button class="btnd" style="padding:4px 10px;font-size:.71rem" onclick="delGrp('${g.id}')">Del</button>
+      </div>
+    </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No groups yet</div>';
+}
+function openGrpModal(id){
+  document.getElementById('grpEId').value=id||'';
+  document.getElementById('grpMTit').textContent=id?'EDIT GROUP':'ADD GROUP';
+  if(id){const g=GROUPS.find(g=>g.id===id);document.getElementById('grpName').value=g.name;document.getElementById('grpColor').value=g.color||'gold';}
+  else{document.getElementById('grpName').value='';document.getElementById('grpColor').value='gold';}
+  OM('grpModal');
+}
+function editGrp(id){openGrpModal(id);}
+function delGrp(id){
+  if(!confirm('Delete this group?')) return;
+  TEAMS.filter(t=>t.group===id).forEach(t=>FDB.dbUpd('teams/'+t.id,{group:''}));
+  FDB.dbDel('groups/'+id); CM('grpModal'); T('Group deleted');
+}
+function saveGrp(){
+  const id=document.getElementById('grpEId').value;
+  const name=document.getElementById('grpName').value.trim();
+  const color=document.getElementById('grpColor').value;
+  if(!name){T('Enter group name');return;}
+  const key=id||UID();
+  FDB.dbSet('groups/'+key,{name,color});
+  CM('grpModal'); T(id?'✅ Group updated':'✅ Group added');
+}
+
+// ─────────────────────────────────────────
+// ADMIN — TEAMS
+// ─────────────────────────────────────────
+function renderATeamList(){
+  document.getElementById('aTeamList').innerHTML=TEAMS.length?
+    TEAMS.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:9px 12px">
+      <div><div style="font-weight:600;font-size:.84rem;color:var(--tx)">${t.emoji||''} ${t.name}</div><div style="font-size:.66rem;color:var(--mt)">Capt: ${t.captain||'—'} · ${GROUPS.find(g=>g.id===t.group)?.name||'No Group'}</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btns" style="padding:4px 10px;font-size:.71rem" onclick="editTeam('${t.id}')">Edit</button>
+        <button class="btnd" style="padding:4px 10px;font-size:.71rem" onclick="delTeam('${t.id}')">Del</button>
+      </div>
+    </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No teams yet</div>';
+}
+function populateGroupSelFor(selId,selected){
+  document.getElementById(selId).innerHTML='<option value="">— No Group —</option>'+GROUPS.map(g=>`<option value="${g.id}" ${g.id===selected?'selected':''}>${g.name}</option>`).join('');
+}
+function openTeamModal(id){
+  document.getElementById('teamEId').value=id||'';
+  document.getElementById('teamMTit').textContent=id?'EDIT TEAM':'ADD TEAM';
+  populateGroupSelFor('teamGroup',id?TEAMS.find(t=>t.id===id)?.group:'');
+  if(id){const t=TEAMS.find(t=>t.id===id);document.getElementById('teamName').value=t.name;document.getElementById('teamEmoji').value=t.emoji||'';document.getElementById('teamCap').value=t.captain||'';}
+  else{['teamName','teamEmoji','teamCap'].forEach(x=>document.getElementById(x).value='');}
+  OM('teamModal');
+}
+function editTeam(id){openTeamModal(id);}
+function delTeam(id){
+  if(!confirm('Delete team?')) return;
+  FDB.dbDel('teams/'+id); T('Team deleted');
+}
+function saveTeam(){
+  const id=document.getElementById('teamEId').value;
+  const name=document.getElementById('teamName').value.trim();
+  if(!name){T('Enter team name');return;}
+  const obj={name,emoji:document.getElementById('teamEmoji').value.trim()||'🏏',captain:document.getElementById('teamCap').value.trim(),group:document.getElementById('teamGroup').value};
+  FDB.dbSet('teams/'+(id||UID()),obj); CM('teamModal'); T(id?'✅ Team updated':'✅ Team added');
+}
+
+// ─────────────────────────────────────────
+// ADMIN — MATCHES
+// ─────────────────────────────────────────
+function renderAMatchList(){
+  const el=document.getElementById('aMatchList');
+  el.innerHTML=MATCHES.length?MATCHES.map(m=>`<div class="admin-match-row">
+    <div class="amr-info">
+      <div class="amr-teams">[${m.no||'?'}] ${m.t1} vs ${m.t2}</div>
+      <div class="amr-meta">${FD(m.date)} ${FT(m.time)} · <span class="spill s-${m.status}" style="font-size:.55rem">${SL(m.status)}</span></div>
+    </div>
+    <div class="amr-btns">
+      <button class="btns" style="padding:4px 9px;font-size:.7rem" onclick="editMatch('${m.id}')">Edit</button>
+      <button class="btnd" style="padding:4px 9px;font-size:.7rem" onclick="delMatch('${m.id}')">Del</button>
+    </div>
+  </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No matches yet</div>';
+}
+function populateTeamSels(){
+  const opts='<option value="">— Select —</option>'+TEAMS.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+  document.getElementById('mT1').innerHTML=opts; document.getElementById('mT2').innerHTML=opts;
+}
+function toggleResFields(status){
+  const showRes=['completed','rain','stopped','postponed','cancelled'].includes(status);
+  document.getElementById('resField').style.display=showRes?'block':'none';
+  document.getElementById('scField').style.display=status==='completed'?'block':'none';
+}
+function openMatchModal(id){
+  document.getElementById('matchEId').value=id||'';
+  document.getElementById('matchMTit').textContent=id?'EDIT MATCH':'ADD MATCH';
+  populateTeamSels();
+  document.getElementById('mGroup').innerHTML='<option value="">— None —</option>'+GROUPS.map(g=>`<option value="${g.name}">${g.name}</option>`).join('');
+  if(id){
+    const m=MATCHES.find(m=>m.id===id);
+    ['mStage','mGroup','mNo','mDate','mTime','mVenue','mStatus','mResult','mS1','mS2'].forEach(f=>{const el=document.getElementById(f);if(el)el.value=m[f.replace('m','').toLowerCase()]||m[f]||'';});
+    document.getElementById('mStage').value=m.stage||'group';
+    document.getElementById('mGroup').value=m.group||'';
+    document.getElementById('mNo').value=m.no||'';
+    document.getElementById('mDate').value=m.date||'';
+    document.getElementById('mTime').value=m.time||'';
+    document.getElementById('mYear').value=m.year||2026;
+    document.getElementById('mVenue').value=m.venue||'';
+    document.getElementById('mStatus').value=m.status||'upcoming';
+    document.getElementById('mResult').value=m.result||'';
+    document.getElementById('mS1').value=m.s1||'';
+    document.getElementById('mS2').value=m.s2||'';
+    document.getElementById('mT1').value=m.t1||'';
+    document.getElementById('mT2').value=m.t2||'';
+    toggleResFields(m.status);
+  } else {
+    ['mStage','mGroup','mT1','mT2','mDate','mTime','mResult','mS1','mS2'].forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+    document.getElementById('mStage').value='group';
+    document.getElementById('mNo').value=String(MATCHES.length+1).padStart(2,'0');
+    document.getElementById('mYear').value=2026;
+    document.getElementById('mVenue').value='Pattan Cricket Ground';
+    document.getElementById('mStatus').value='upcoming';
+    toggleResFields('upcoming');
+  }
+  OM('matchModal');
+}
+function editMatch(id){openMatchModal(id);}
+function delMatch(id){if(!confirm('Delete match?'))return;FDB.dbDel('matches/'+id);T('Match deleted');}
+function saveMatch(){
+  const id=document.getElementById('matchEId').value;
+  const t1=document.getElementById('mT1').value.trim();
+  const t2=document.getElementById('mT2').value.trim();
+  if(!t1||!t2){T('Select both teams');return;}
+  const obj={stage:document.getElementById('mStage').value,group:document.getElementById('mGroup').value,no:document.getElementById('mNo').value.trim(),t1,t2,date:document.getElementById('mDate').value,time:document.getElementById('mTime').value,year:parseInt(document.getElementById('mYear').value)||2026,venue:document.getElementById('mVenue').value.trim()||'Pattan Cricket Ground',status:document.getElementById('mStatus').value,result:document.getElementById('mResult').value.trim(),s1:document.getElementById('mS1').value.trim(),s2:document.getElementById('mS2').value.trim(),overs:16};
+  FDB.dbSet('matches/'+(id||UID()),obj); CM('matchModal'); T(id?'✅ Match updated':'✅ Match added');
+}
+function openStatusModal(){
+  document.getElementById('stSel').innerHTML=MATCHES.map(m=>`<option value="${m.id}">[${m.no||'?'}] ${m.t1} vs ${m.t2}</option>`).join('');
+  OM('statusModal');
+}
+function saveStatus(){
+  const id=document.getElementById('stSel').value;
+  const status=document.getElementById('stStatus').value;
+  const result=document.getElementById('stResult').value.trim();
+  const s1=document.getElementById('stS1').value.trim();
+  const s2=document.getElementById('stS2').value.trim();
+  const date=document.getElementById('stDate').value;
+  const updates={status};
+  if(result) updates.result=result;
+  if(s1) updates.s1=s1;
+  if(s2) updates.s2=s2;
+  if(date&&status==='postponed') updates.date=date;
+  FDB.dbUpd('matches/'+id,updates); CM('statusModal'); T(`✅ Status → ${SL(status)}`);
+}
+
+// ─────────────────────────────────────────
+// ADMIN — PLAYERS
+// ─────────────────────────────────────────
+function renderAPlayerList(){
+  document.getElementById('aPlayerList').innerHTML=PLAYERS.length?
+    PLAYERS.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:8px 11px">
+      <div><div style="font-weight:600;font-size:.82rem;color:var(--tx)">${p.emoji||'🏏'} ${p.name}</div><div style="font-size:.65rem;color:var(--mt)">${p.team||'—'}</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btns" style="padding:3px 8px;font-size:.68rem" onclick="editPlayer('${p.id}')">Edit</button>
+        <button class="btnd" style="padding:3px 8px;font-size:.68rem" onclick="delPlayer('${p.id}')">Del</button>
+      </div>
+    </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No players yet</div>';
+}
+function openPlayerModal(id){
+  document.getElementById('playerEId').value=id||'';
+  document.getElementById('playerMTit').textContent=id?'EDIT PLAYER':'ADD PLAYER';
+  document.getElementById('pTeam').innerHTML='<option value="">— Select —</option>'+TEAMS.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+  if(id){
+    const p=PLAYERS.find(p=>p.id===id);
+    document.getElementById('pName').value=p.name; document.getElementById('pEmoji').value=p.emoji||'';
+    document.getElementById('pTeam').value=p.team||''; document.getElementById('pRole').value=p.role||'batting';
+    document.getElementById('pRuns').value=p.runs||0; document.getElementById('pWkts').value=p.wickets||0;
+    document.getElementById('pSR').value=p.sr||0; document.getElementById('pBest').value=p.best||'';
+  } else {
+    ['pName','pEmoji','pBest'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('pTeam').value=''; document.getElementById('pRole').value='batting';
+    ['pRuns','pWkts','pSR'].forEach(x=>document.getElementById(x).value=0);
+  }
+  OM('playerModal');
+}
+function editPlayer(id){openPlayerModal(id);}
+function delPlayer(id){if(!confirm('Delete player?'))return;FDB.dbDel('players/'+id);T('Player deleted');}
+function savePlayer(){
+  const id=document.getElementById('playerEId').value;
+  const name=document.getElementById('pName').value.trim();
+  if(!name){T('Enter name');return;}
+  const obj={name,emoji:document.getElementById('pEmoji').value.trim()||'🏏',team:document.getElementById('pTeam').value,role:document.getElementById('pRole').value,runs:parseInt(document.getElementById('pRuns').value)||0,wickets:parseInt(document.getElementById('pWkts').value)||0,sr:parseFloat(document.getElementById('pSR').value)||0,best:document.getElementById('pBest').value.trim()};
+  FDB.dbSet('players/'+(id||UID()),obj); CM('playerModal'); T(id?'✅ Updated':'✅ Player added');
+}
+
+// ─────────────────────────────────────────
+// ADMIN — POLLS
+// ─────────────────────────────────────────
+function renderAPollList(){
+  document.getElementById('aPollList').innerHTML=POLLS.length?
+    POLLS.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:8px 11px">
+      <div style="font-size:.82rem;color:var(--tx);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.question}</div>
+      <button class="btnd" style="padding:3px 8px;font-size:.68rem;margin-left:6px" onclick="delPoll('${p.id}')">Del</button>
+    </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No polls yet</div>';
+}
+function openPollModal(){['pollType','pollQ','pollO1','pollO2','pollO3','pollO4'].forEach(x=>document.getElementById(x).value='');OM('pollModal');}
+function delPoll(id){FDB.dbDel('polls/'+id);T('Poll deleted');}
+function savePoll(){
+  const type=document.getElementById('pollType').value.trim()||'Poll';
+  const q=document.getElementById('pollQ').value.trim();
+  const opts=['pollO1','pollO2','pollO3','pollO4'].map(x=>document.getElementById(x).value.trim()).filter(Boolean);
+  if(!q||opts.length<2){T('Enter question + at least 2 options');return;}
+  FDB.dbSet('polls/'+UID(),{type,question:q,options:opts,votes:new Array(opts.length).fill(0),votedBy:{}}); CM('pollModal'); T('✅ Poll added');
+}
+
+// ─────────────────────────────────────────
+// ADMIN — ANNOUNCEMENTS, RULES, ORGANISERS
+// ─────────────────────────────────────────
+function addAnn(){
+  const txt=document.getElementById('newAnn').value.trim();
+  if(!txt) return;
+  const newList=[txt,...ANN].slice(0,30);
+  FDB.dbSet('ann',newList);
+  document.getElementById('newAnn').value=''; T('📢 Announcement posted');
+}
+function renderAAnnList(){
+  document.getElementById('annList').innerHTML=ANN.map((a,i)=>`
+    <div style="display:flex;align-items:center;gap:7px;background:var(--d3);border-radius:6px;padding:6px 10px">
+      <span style="flex:1;font-size:.73rem;color:var(--dm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a}</span>
+      <button onclick="delAnn(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;flex-shrink:0">✕</button>
+    </div>`).join('');
+}
+function delAnn(i){const n=[...ANN];n.splice(i,1);FDB.dbSet('ann',n);}
+function addRule(){
+  const txt=document.getElementById('newRule').value.trim();
+  if(!txt) return;
+  FDB.dbSet('rules',[...RULES,txt]);
+  document.getElementById('newRule').value=''; T('✅ Rule added');
+}
+function renderARuleList(){
+  document.getElementById('aRuleList').innerHTML=RULES.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:7px;background:var(--d3);border-radius:6px;padding:6px 10px">
+      <span style="flex:1;font-size:.73rem;color:var(--dm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${r}</span>
+      <button onclick="delRule(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem">✕</button>
+    </div>`).join('');
+}
+function delRule(i){const n=[...RULES];n.splice(i,1);FDB.dbSet('rules',n);}
+function renderAOrgList(){
+  document.getElementById('aOrgList').innerHTML=ORGS.length?
+    ORGS.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--d3);border:1px solid var(--b1);border-radius:8px;padding:8px 11px">
+      <div><div style="font-weight:600;font-size:.82rem;color:var(--tx)">${o.emoji||'👤'} ${o.name}</div><div style="font-size:.65rem;color:var(--mt)">${o.role}</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btns" style="padding:3px 8px;font-size:.68rem" onclick="editOrg('${o.id}')">Edit</button>
+        <button class="btnd" style="padding:3px 8px;font-size:.68rem" onclick="delOrg('${o.id}')">Del</button>
+      </div>
+    </div>`).join(''):'<div style="font-size:.78rem;color:var(--mt);text-align:center;padding:8px">No organisers yet</div>';
+}
+function openOrgModal(id){
+  document.getElementById('orgEId').value=id||'';
+  document.getElementById('orgMTit').textContent=id?'EDIT ORGANISER':'ADD ORGANISER';
+  if(id){const o=ORGS.find(o=>o.id===id);document.getElementById('orgName').value=o.name;document.getElementById('orgRole').value=o.role;document.getElementById('orgEmoji').value=o.emoji||'';document.getElementById('orgSince').value=o.since||'';}
+  else{['orgName','orgRole','orgEmoji','orgSince'].forEach(x=>document.getElementById(x).value='');}
+  OM('orgModal');
+}
+function editOrg(id){openOrgModal(id);}
+function delOrg(id){FDB.dbDel('orgs/'+id);T('Organiser deleted');}
+function saveOrg(){
+  const id=document.getElementById('orgEId').value;
+  const name=document.getElementById('orgName').value.trim();
+  if(!name){T('Enter name');return;}
+  const obj={name,role:document.getElementById('orgRole').value.trim(),emoji:document.getElementById('orgEmoji').value.trim()||'👤',since:document.getElementById('orgSince').value.trim()};
+  FDB.dbSet('orgs/'+(id||UID()),obj); CM('orgModal'); T(id?'✅ Updated':'✅ Organiser added');
+}
+
+// ═══════════════════════════════════════════════════
+// PUSH NOTIFICATIONS SYSTEM
+// ═══════════════════════════════════════════════════
+
+// Show in-app push banner (for foreground notifications)
+window.showPushBanner = function(title, body, icon='📢') {
+  const banner = document.getElementById('pushBanner');
+  document.getElementById('pushBannerTitle').textContent = title;
+  document.getElementById('pushBannerBody').textContent = body;
+  document.getElementById('pushBannerIcon').textContent = icon;
+  banner.style.display = 'block';
+  banner.style.animation = 'none';
+  setTimeout(() => { banner.style.animation = 'slideDown .3s ease'; }, 10);
+  setTimeout(() => { banner.style.display = 'none'; }, 7000);
+};
+
+// Subscribe user to push notifications
+async function subscribePush() {
+  if (!('Notification' in window)) { T('Push not supported on this browser'); return; }
+
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { T('Notification permission denied'); return; }
+
+    // Use native browser push via service worker (no FCM token needed for in-app broadcast)
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      const vid = getViewerId();
+      // Mark as subscribed — we use Firebase broadcast for notifications
+      localStorage.setItem('ppl_push_token', vid);
+      localStorage.setItem('ppl_push_subscribed', '1');
+      document.getElementById('notifBar').style.display = 'none';
+      T('🔔 Notifications enabled!');
+      showPushBanner('🔔 Notifications On!', 'You\'ll get alerts for live matches, wickets & results.', '✅');
+      // Register this subscriber in Firebase
+      if (FDB) FDB.dbSet('subscribers/' + vid, { ts: Date.now(), ua: navigator.userAgent.slice(0, 80) });
+    }
+  } catch(e) {
+    console.error('Push subscribe error:', e);
+    T('Could not enable: ' + e.message);
+  }
+}
+
+// Admin: send push notification to all subscribers via Firebase function call
+async function adminSendPush(title, body, icon='📢') {
+  if (!FDB) return;
+  // We write a notification job to Firebase — the service worker picks it up
+  // For web-only PWA without Cloud Functions, we use a broadcast node
+  const job = { title, body, icon, ts: Date.now(), id: UID() };
+  await FDB.dbSet('notifications/latest', job);
+  // Also show locally for admin
+  showPushBanner(title, body, icon);
+  T(`📢 Notification sent: "${title}"`);
+}
+
+// Listen for new notifications broadcast from Firebase (all open tabs/devices)
+function setupNotificationListener() {
+  if (!FDB) return;
+  let lastId = localStorage.getItem('ppl_last_notif') || '';
+  FDB.dbListen('notifications/latest', notif => {
+    if (!notif || notif.id === lastId) return;
+    // Skip stale notifications older than 30s (e.g. on page load)
+    if (Date.now() - (notif.ts || 0) > 30000) { lastId = notif.id; return; }
+    lastId = notif.id;
+    localStorage.setItem('ppl_last_notif', notif.id);
+    // Show in-app banner
+    showPushBanner(notif.title, notif.body || '', notif.icon || '📢');
+    // Show native system notification if page not visible and permission granted
+    if (document.hidden && Notification.permission === 'granted') {
+      try {
+        new Notification(notif.title, {
+          body:  notif.body || '',
+          icon:  'icons/icon-192.png',
+          badge: 'icons/icon-192.png',
+          tag:   notif.id
+        });
+      } catch(e) {}
+    }
+  });
+}
+
+// Check if we should show the subscribe bar
+function checkNotifPrompt() {
+  if (localStorage.getItem('ppl_push_subscribed') === '1') return;
+  if (localStorage.getItem('ppl_notif_dismissed') === '1') return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') return;
+  setTimeout(() => {
+    const bar = document.getElementById('notifBar');
+    if (bar) { bar.style.display = 'flex'; }
+  }, 4000); // show after 4 seconds
+}
+
+// ── Admin notification triggers ──
+// Called automatically when key events happen
+
+function notifyMatchLive(match) {
+  const t1 = TEAMS.find(t => t.name === match.t1) || { emoji: '🏏' };
+  const t2 = TEAMS.find(t => t.name === match.t2) || { emoji: '🏏' };
+  adminSendPush(
+    `🔴 LIVE: ${match.t1} vs ${match.t2}`,
+    `Match ${match.no || ''} has started! ${t1.emoji} vs ${t2.emoji} · ${match.venue || 'Pattan Cricket Ground'}`,
+    '🔴'
+  );
+}
+
+function notifyWicket(batterName, wicketType, score, overs) {
+  adminSendPush(
+    `🎯 WICKET! ${batterName} out`,
+    `${batterName} dismissed (${wicketType}) · Score: ${score} (${overs} ov)`,
+    '🎯'
+  );
+}
+
+function notifyBoundary(type, batterName, score) {
+  adminSendPush(
+    type === 6 ? `💥 SIX! ${batterName}` : `🏏 FOUR! ${batterName}`,
+    `Score: ${score}`,
+    type === 6 ? '💥' : '🏏'
+  );
+}
+
+function notifyMatchResult(match, result) {
+  adminSendPush(
+    `🏆 Match Result`,
+    `${match.t1} vs ${match.t2} — ${result}`,
+    '🏆'
+  );
+}
+
+function notifyUpcomingMatch(match) {
+  const t1 = TEAMS.find(t => t.name === match.t1) || { emoji: '🏏' };
+  const t2 = TEAMS.find(t => t.name === match.t2) || { emoji: '🏏' };
+  adminSendPush(
+    `📅 Match Tomorrow: ${match.t1} vs ${match.t2}`,
+    `${FD(match.date)} at ${FT(match.time)} · ${match.venue || 'Pattan Cricket Ground'}`,
+    '📅'
+  );
+}
+
+function notifyInningsEnd(team, score, target) {
+  adminSendPush(
+    `🏏 Innings Over — ${team}: ${score}`,
+    target ? `${target} needed to win!` : '2nd innings about to start',
+    '🏏'
+  );
+}
+
+// Schedule upcoming match notifications (check daily)
+function scheduleMatchReminders() {
+  if (!MATCHES.length) return;
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const tomorrowMatches = MATCHES.filter(m => m.date === tomorrowStr && m.status === 'upcoming');
+  tomorrowMatches.forEach(m => {
+    // Store reminder job in Firebase for admin-triggered sending
+    if (FDB) FDB.dbSet('reminders/' + m.id, { matchId: m.id, t1: m.t1, t2: m.t2, date: m.date, time: m.time, venue: m.venue });
+  });
+}
+
+// ── ADMIN: Manual notification panel functions ──
+function adminSendCustomNotif() {
+  const title = document.getElementById('notifTitle')?.value?.trim();
+  const body  = document.getElementById('notifBody')?.value?.trim();
+  if (!title) { T('Enter notification title'); return; }
+  adminSendPush(title, body || '', '📢');
+  if (document.getElementById('notifTitle')) document.getElementById('notifTitle').value = '';
+  if (document.getElementById('notifBody'))  document.getElementById('notifBody').value  = '';
+}
+
+// ═══════════════════════════════════════════════════
+// PWA INSTALL
+// ═══════════════════════════════════════════════════
+let dPr;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dPr=e;document.getElementById('ibar').style.display='flex';});
+function installApp(){if(!dPr)return;dPr.prompt();dPr.userChoice.then(r=>{if(r.outcome==='accepted')T('✅ PPL App installed!');document.getElementById('ibar').style.display='none';dPr=null;});}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+
+<!-- ═══ FIREBASE REST API — no external SDK, pure fetch ═══ -->
+<script>
+(function(){
+  var BASE = "https://ppl2206-default-rtdb.asia-southeast1.firebasedatabase.app";
+  var st = document.getElementById('splStatus');
+  function setStatus(m){ if(st) st.textContent = m; console.log('[PPL]', m); }
+
+  // ─── Check if running on file:// (local) ───────────────────────────────────
+  // Firebase REST blocks requests from file:// due to CORS.
+  // Must be served via http/https. On Render this works fine.
+  if(location.protocol === 'file:'){
+    setStatus('⚠️ Cannot connect from file://  — serve via Python or Render');
+    console.warn('[PPL] Running on file:// — Firebase REST API requires http/https hosting. Run: python -m http.server 8080 or deploy to Render.');
+    // Boot app in offline mode so UI is visible
+    FDB = makeFallbackDB();
+    setupListeners();
+    return;
+  }
+
+  // ─── URL builder ────────────────────────────────────────────────────────────
+  function url(path){
+    var p = String(path||'').replace(/^\/+/,'').replace(/\/+$/,'');
+    return BASE + (p ? '/'+p : '') + ".json";
+  }
+
+  // ─── Core fetch ─────────────────────────────────────────────────────────────
+  function go(path, opts){
+    var u = url(path);
+    return fetch(u, opts||{})
+      .then(function(r){
+        if(r.status===401||r.status===403){
+          throw new Error('RULES_DENIED:'+r.status);
+        }
+        if(!r.ok){ throw new Error('HTTP_'+r.status); }
+        return r.json();
+      });
+  }
+
+  function dbGet(path)   { return go(path); }
+  function dbSet(path,v) { return go(path,{method:'PUT', headers:{'Content-Type':'application/json'},body:JSON.stringify(v==null?null:v)}); }
+  function dbUpd(path,v) { return go(path,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(v)}); }
+  function dbDel(path)   { return fetch(url(path),{method:'DELETE'}).then(function(){return true;}); }
+  function dbPush(path,v){ return go(path,{method:'POST', headers:{'Content-Type':'application/json'},body:JSON.stringify(v)}); }
+
+  // ─── Real-time: SSE + polling fallback ──────────────────────────────────────
+  var sources={}, polls={};
+  function dbListen(path,cb){
+    dbGet(path).then(cb).catch(function(){});
+    try{
+      var es = new EventSource(url(path));
+      es.addEventListener('put',function(e){
+        try{ var d=JSON.parse(e.data); cb(d.data); }catch(_){}
+      });
+      es.addEventListener('patch',function(){ dbGet(path).then(cb).catch(function(){}); });
+      es.onerror=function(){
+        es.close(); delete sources[path];
+        if(!polls[path]) polls[path]=setInterval(function(){ dbGet(path).then(cb).catch(function(){}); },5000);
+      };
+      sources[path]=es;
+    }catch(_){
+      polls[path]=setInterval(function(){ dbGet(path).then(cb).catch(function(){}); },5000);
+    }
+  }
+  function dbOff(path){
+    if(sources[path]){sources[path].close();delete sources[path];}
+    if(polls[path]){clearInterval(polls[path]);delete polls[path];}
+  }
+
+  // ─── Fallback DB (offline / local mode) ─────────────────────────────────────
+  function makeFallbackDB(){
+    console.warn('[PPL] Running in offline mode — data not saved to Firebase');
+    var cache={};
+    return {
+      dbGet:function(p){ return Promise.resolve(cache[p]||null); },
+      dbSet:function(p,v){ cache[p]=v; return Promise.resolve(v); },
+      dbUpd:function(p,v){ cache[p]=Object.assign(cache[p]||{},v); return Promise.resolve(); },
+      dbDel:function(p){ delete cache[p]; return Promise.resolve(); },
+      dbPush:function(p,v){ var k='id'+Date.now(); if(!cache[p])cache[p]={}; cache[p][k]=v; return Promise.resolve({name:k}); },
+      dbListen:function(p,cb){ cb(cache[p]||null); },
+      dbOff:function(){}
+    };
+  }
+
+  window.DB={dbGet:dbGet,dbSet:dbSet,dbUpd:dbUpd,dbDel:dbDel,dbPush:dbPush,dbListen:dbListen,dbOff:dbOff};
+
+  // ─── Boot: ping Firebase ─────────────────────────────────────────────────────
+  setStatus('Connecting to Firebase…');
+
+  fetch(BASE + "/ppl_ping.json", {method:'GET'})
+    .then(function(r){
+      console.log('[PPL] Firebase ping →', r.status);
+      if(r.status===200){
+        r.json().then(function(){
+          var dot=document.getElementById('syncDot');
+          if(dot){dot.style.display='inline-block';dot.style.background='#00ff88';}
+          setStatus('✅ Firebase connected!');
+          FDB = window.DB;
+          setupListeners();
+        });
+      } else if(r.status===401||r.status===403){
+        r.text().then(function(t){
+          setStatus('❌ Firebase Rules still blocking ('+r.status+'). Make sure you published the rules in Firebase Console.');
+          console.error('[PPL] Rules error:', t);
+        });
+      } else {
+        setStatus('❌ Unexpected HTTP '+r.status);
+      }
+    })
+    .catch(function(e){
+      // "Failed to fetch" on Render usually means a Render CSP header is blocking the request.
+      // Fix: add Access-Control-Allow-Origin header override in render.yaml, OR
+      // the request is being blocked by browser CORS — Firebase returns CORS headers so this should not happen on https.
+      console.error('[PPL] fetch error:', e.name, e.message, 'origin:', location.origin, 'protocol:', location.protocol);
+      setStatus('❌ Fetch blocked. Checking CORS…');
+
+      // Last resort: try with no-cors mode to at least confirm network is up
+      fetch(BASE + "/ppl_ping.json", {method:'GET', mode:'no-cors'})
+        .then(function(){
+          // Got an opaque response — network is up but CORS is blocking
+          setStatus('❌ CORS blocked. This usually means the app is not on https. Make sure you opened the Render https:// URL, not a local file.');
+          console.error('[PPL] CORS blocked — opaque response. Origin:', location.origin);
+        })
+        .catch(function(e2){
+          setStatus('❌ Network down: '+e2.message+'. Check your internet connection.');
+        });
+    });
+})();
+</script>
+</body>
+  </html>
