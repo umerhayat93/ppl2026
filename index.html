@@ -11,8 +11,10 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>PPL 2026 – Pattan Premier League</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<!-- Fonts loaded async to prevent render blocking -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" onload="this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap"></noscript>
 
 <!-- No external SDK needed — uses Firebase REST API via fetch() -->
 
@@ -32,21 +34,19 @@ body{font-family:'Rajdhani',sans-serif;background:var(--deep);color:var(--tx);ov
 ::-webkit-scrollbar-thumb{background:var(--gd);border-radius:2px}
 
 /* SPLASH */
-#spl{position:fixed;inset:0;z-index:9999;background:var(--deep);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,transform .6s}
+#spl{position:fixed;inset:0;z-index:9999;background:var(--deep);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .3s,transform .3s}
 #spl.out{opacity:0;pointer-events:none;transform:scale(1.06)}
 .slogo{width:110px;height:110px;background:radial-gradient(circle at 38% 38%,#ffd966,#c8960a);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:2.1rem;color:var(--deep);box-shadow:0 0 70px rgba(240,192,64,.55);animation:sp 1.5s ease-in-out infinite;position:relative}
 .slogo::after{content:'🏏';position:absolute;bottom:-4px;right:-4px;font-size:1.8rem;filter:drop-shadow(0 0 8px rgba(240,192,64,.8))}
 @keyframes sp{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 .stitle{font-family:'Bebas Neue';font-size:2.5rem;color:var(--gold);margin-top:18px;letter-spacing:3px}
 .ssub{font-size:.8rem;color:var(--dm);letter-spacing:4px;text-transform:uppercase;margin-top:5px}
-.sbar{width:180px;height:2px;background:var(--d3);border-radius:2px;margin-top:36px;overflow:hidden}
-.sfill{height:100%;background:linear-gradient(90deg,var(--gd),var(--gl));animation:lb 2.2s ease forwards}
-@keyframes lb{from{width:0}to{width:100%}}
+/* sbar removed for performance */
 .spl-status{font-size:.7rem;color:var(--mt);margin-top:12px;letter-spacing:2px}
 
 /* APP */
-#app{display:none;flex-direction:column;min-height:100vh}
-#app.vis{display:flex}
+#app{opacity:0;flex-direction:column;min-height:100vh;display:flex;pointer-events:none;transition:opacity .25s}
+#app.vis{opacity:1;pointer-events:auto}
 
 /* TICKER */
 .ticker{background:rgba(240,192,64,.07);border-bottom:1px solid var(--b1);height:30px;display:flex;align-items:center;overflow:hidden}
@@ -423,8 +423,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--deep);color:var(--tx);ov
   <div class="slogo">PPL</div>
   <div class="stitle">Pattan Premier League</div>
   <div class="ssub">Since 2010 · 16th Edition · 2026</div>
-  <div class="sbar"><div class="sfill"></div></div>
-  <div class="spl-status" id="splStatus">Loading PPL 2026…</div>
+  <div class="spl-status" id="splStatus">🏏 PPL 2026</div>
 </div>
 
 <!-- APP -->
@@ -1005,14 +1004,12 @@ function getStats(teamName){
 // at the end of <body> once the compat SDK has loaded and DOM is ready.
 
 function setupListeners(){
-  // Boot app immediately — don't wait, render as data arrives
-  let _booted = false;
-  function maybeboot(){ if(!_booted){ _booted=true; bootApp(); } }
-  // Boot after first critical listeners respond (or max 800ms)
-  setTimeout(maybeboot, 800);
-  FDB.dbListen('groups',   v=>{ GROUPS  = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  maybeboot(); renderGroups();renderPoints();renderTeams(); if(IS_ADMIN)renderAGrpList();});
-  FDB.dbListen('teams',    v=>{ TEAMS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  maybeboot(); renderTeams();renderGroups();renderPoints();updateStats();populateSquadTeamSel(); if(IS_ADMIN)renderATeamList();});
-  FDB.dbListen('matches',  v=>{ MATCHES = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  maybeboot(); renderSchedule();renderGroups();renderPoints();renderTodayPoster();renderCountdown();updateStats(); if(IS_ADMIN)renderAMatchList();});
+  // Boot app IMMEDIATELY — Firebase loads silently in background
+  bootApp();
+  // Start Firebase listeners — UI updates as data arrives
+  FDB.dbListen('groups',   v=>{ GROUPS  = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderGroups();renderPoints();renderTeams(); if(IS_ADMIN)renderAGrpList();});
+  FDB.dbListen('teams',    v=>{ TEAMS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderTeams();renderGroups();renderPoints();updateStats();populateSquadTeamSel(); if(IS_ADMIN)renderATeamList();});
+  FDB.dbListen('matches',  v=>{ MATCHES = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderSchedule();renderGroups();renderPoints();renderTodayPoster();renderCountdown();updateStats(); if(IS_ADMIN)renderAMatchList();});
   FDB.dbListen('players',  v=>{ PLAYERS = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderPlayers('batting'); if(IS_ADMIN)renderAPlayerList();});
   FDB.dbListen('polls',    v=>{ POLLS   = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderPolls(); if(IS_ADMIN)renderAPollList();});
   FDB.dbListen('orgs',     v=>{ ORGS    = v?Object.entries(v).map(([id,d])=>({id,...d})):[];  renderOrgs(); if(IS_ADMIN)renderAOrgList();});
@@ -1031,14 +1028,15 @@ function setupListeners(){
 }
 
 function bootApp(){
-  document.getElementById('spl').classList.add('out');
-  setTimeout(()=>{
-    document.getElementById('spl').style.display='none';
-    document.getElementById('app').classList.add('vis');
-    setupNotificationListener();
-    checkNotifPrompt();
-    scheduleMatchReminders();
-  },650);
+  // Show app instantly — no delay
+  var spl=document.getElementById('spl');
+  var app=document.getElementById('app');
+  app.classList.add('vis');
+  spl.classList.add('out');
+  setTimeout(()=>{ spl.style.display='none'; },350);
+  setupNotificationListener();
+  checkNotifPrompt();
+  scheduleMatchReminders();
 }
 
 function updateStats(){
@@ -2489,85 +2487,143 @@ function installApp(){if(!dPr)return;dPr.prompt();dPr.userChoice.then(r=>{if(r.o
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 
-<!-- ═══ FIREBASE REST API — no external SDK, pure fetch ═══ -->
+<!-- ═══ FIREBASE REST API — no external SDK ═══ -->
 <script>
 (function(){
-  var BASE = "https://ppl2206-default-rtdb.asia-southeast1.firebasedatabase.app";
+  var BASE="https://ppl2206-default-rtdb.asia-southeast1.firebasedatabase.app";
 
-  // ─── URL builder ───
   function url(p){
     return BASE+"/"+String(p||"").replace(/^\/+/,"").replace(/\/+$/,"")+".json";
   }
 
-  // ─── Core fetch ───
-  function go(path,opts){
-    return fetch(url(path),opts||{}).then(function(r){
-      if(r.status===401||r.status===403) throw new Error("PERMISSION_DENIED – check Firebase Rules");
-      if(!r.ok) throw new Error("HTTP_"+r.status);
+  // GET — returns null for 404 (empty node), throws only on real errors
+  function dbGet(p){
+    return fetch(url(p)).then(function(r){
+      if(r.status===404) return null;
+      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json().then(function(v){ return v===undefined?null:v; });
+    });
+  }
+
+  // SET (PUT) — always succeeds on 200, returns written value
+  function dbSet(p,v){
+    return fetch(url(p),{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(v==null?null:v)
+    }).then(function(r){
+      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
+      if(!r.ok) throw new Error("HTTP "+r.status+" on write");
       return r.json();
     });
   }
-  function dbGet(p)   { return go(p); }
-  function dbSet(p,v) { return go(p,{method:"PUT",  headers:{"Content-Type":"application/json"},body:JSON.stringify(v==null?null:v)}); }
-  function dbUpd(p,v) { return go(p,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}); }
-  function dbDel(p)   { return fetch(url(p),{method:"DELETE"}).then(function(){return true;}); }
-  function dbPush(p,v){ return go(p,{method:"POST", headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}); }
 
-  // ─── Real-time: SSE + 4s polling fallback ───
-  var sources={}, polls={};
+  // UPDATE (PATCH)
+  function dbUpd(p,v){
+    return fetch(url(p),{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(v)
+    }).then(function(r){
+      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
+      if(!r.ok) throw new Error("HTTP "+r.status+" on update");
+      return r.json();
+    });
+  }
+
+  // DELETE
+  function dbDel(p){
+    return fetch(url(p),{method:"DELETE"}).then(function(r){
+      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
+      return true;
+    });
+  }
+
+  // PUSH (POST) — returns {name: key}
+  function dbPush(p,v){
+    return fetch(url(p),{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(v)
+    }).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status+" on push");
+      return r.json();
+    });
+  }
+
+  // LISTEN — immediate fetch + polling every 3 seconds for real-time feel
+  // SSE via EventSource also attempted for instant updates
+  var polls={}, sources={};
   function dbListen(path,cb){
-    // immediate fetch
-    dbGet(path).then(cb).catch(function(){});
-    // SSE stream — Firebase REST supports EventSource
+    // Fetch immediately
+    dbGet(path).then(function(v){cb(v);}).catch(function(){cb(null);});
+
+    // Try SSE for real-time
     try{
-      var es=new EventSource(url(path));
+      var esUrl=BASE+"/"+String(path||"").replace(/^\/+/,"").replace(/\/+$/,"")+".json";
+      var es=new EventSource(esUrl);
+      var sseWorking=false;
       es.addEventListener("put",function(e){
-        try{ var d=JSON.parse(e.data); cb(d.data); }catch(_){}
+        sseWorking=true;
+        try{var d=JSON.parse(e.data);cb(d.data);}catch(_){}
       });
-      es.addEventListener("patch",function(){
-        dbGet(path).then(cb).catch(function(){});
+      es.addEventListener("patch",function(e){
+        sseWorking=true;
+        dbGet(path).then(function(v){cb(v);}).catch(function(){});
       });
+      // If SSE errors, fall back to polling
       es.onerror=function(){
-        es.close(); delete sources[path];
-        if(!polls[path]) polls[path]=setInterval(function(){dbGet(path).then(cb).catch(function(){});},4000);
+        es.close();delete sources[path];
+        if(!polls[path]){
+          polls[path]=setInterval(function(){
+            dbGet(path).then(function(v){cb(v);}).catch(function(){});
+          },3000);
+        }
       };
       sources[path]=es;
+      // If no SSE event in 5s, start polling as backup
+      setTimeout(function(){
+        if(!sseWorking&&!polls[path]){
+          polls[path]=setInterval(function(){
+            dbGet(path).then(function(v){cb(v);}).catch(function(){});
+          },3000);
+        }
+      },5000);
     }catch(_){
-      polls[path]=setInterval(function(){dbGet(path).then(cb).catch(function(){});},4000);
+      // SSE not supported — poll every 3s
+      polls[path]=setInterval(function(){
+        dbGet(path).then(function(v){cb(v);}).catch(function(){});
+      },3000);
     }
   }
+
   function dbOff(p){
     if(sources[p]){sources[p].close();delete sources[p];}
     if(polls[p]){clearInterval(polls[p]);delete polls[p];}
   }
 
+  // Expose DB
   window.DB={dbGet:dbGet,dbSet:dbSet,dbUpd:dbUpd,dbDel:dbDel,dbPush:dbPush,dbListen:dbListen,dbOff:dbOff};
 
-  // ─── Boot: ping then start ───
-  var st=document.getElementById("splStatus");
-  if(st) st.textContent="Loading PPL 2026…";
+  // Boot instantly — no ping, no waiting
+  FDB=window.DB;
+  setupListeners();
 
-  fetch(url("ppl_ping")).then(function(r){
-    if(r.status===200||r.status===204){
-      boot();
-    } else if(r.status===401||r.status===403){
-      if(st) st.textContent="❌ Firebase Rules: set read+write to true and Publish";
-    } else {
-      // Try anyway — some Firebase setups return 404 for empty nodes  
-      boot();
-    }
-  }).catch(function(){
-    // CORS or network — try booting anyway, dbListen will handle errors
-    boot();
-  });
+  // Background connection check (non-blocking)
+  setTimeout(function(){
+    dbGet("ppl_ping").then(function(){
+      var dot=document.getElementById("syncDot");
+      if(dot){dot.style.display="inline-block";dot.style.background="#00ff88";}
+    }).catch(function(e){
+      var dot=document.getElementById("syncDot");
+      if(dot){dot.style.display="inline-block";dot.style.background="#ff3b5c";}
+      if(e.message&&e.message.indexOf("Permission")!==-1){
+        T("⚠️ Firebase Rules: set read+write to true in Firebase Console");
+      }
+    });
+  },1000);
 
-  function boot(){
-    var dot=document.getElementById("syncDot");
-    if(dot){dot.style.display="inline-block";dot.style.background="#00ff88";}
-    if(st) st.textContent="✅ Connected";
-    FDB=window.DB;
-    setupListeners();
-  }
 })();
 </script>
 </body>
