@@ -2487,142 +2487,146 @@ function installApp(){if(!dPr)return;dPr.prompt();dPr.userChoice.then(r=>{if(r.o
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 
-<!-- ═══ FIREBASE REST API — no external SDK ═══ -->
+<!-- ═══ FIREBASE REST API ═══ -->
 <script>
 (function(){
-  var BASE="https://ppl2206-default-rtdb.asia-southeast1.firebasedatabase.app";
+  var BASE = "https://ppl2206-default-rtdb.asia-southeast1.firebasedatabase.app";
 
+  // URL helper
   function url(p){
-    return BASE+"/"+String(p||"").replace(/^\/+/,"").replace(/\/+$/,"")+".json";
+    var clean = String(p||"").replace(/^\/+/,"").replace(/\/+$/,"");
+    return BASE + (clean ? "/"+clean : "") + ".json";
   }
 
-  // GET — returns null for 404 (empty node), throws only on real errors
+  // ── READ (GET) ──────────────────────────────────────────────────────
+  // Simple GET — no CORS preflight
   function dbGet(p){
-    return fetch(url(p)).then(function(r){
-      if(r.status===404) return null;
-      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
-      if(!r.ok) throw new Error("HTTP "+r.status);
-      return r.json().then(function(v){ return v===undefined?null:v; });
-    });
+    return fetch(url(p),{method:"GET"})
+      .then(function(r){
+        if(r.status===404||r.status===204) return null;
+        if(r.status===401||r.status===403) throw new Error("Firebase Rules denied. Go to Firebase Console → Realtime Database → Rules → set .read and .write to true → Publish.");
+        if(!r.ok) throw new Error("GET failed: HTTP "+r.status);
+        return r.text().then(function(t){ 
+          try{ return JSON.parse(t); } catch(_){ return null; }
+        });
+      });
   }
 
-  // SET (PUT) — always succeeds on 200, returns written value
-  function dbSet(p,v){
-    return fetch(url(p),{
-      method:"PUT",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(v==null?null:v)
-    }).then(function(r){
-      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
-      if(!r.ok) throw new Error("HTTP "+r.status+" on write");
-      return r.json();
-    });
+  // ── WRITE helpers ───────────────────────────────────────────────────
+  // Firebase REST: use X-HTTP-Method-Override to send PUT/PATCH/DELETE
+  // as POST — this avoids CORS preflight (POST with text/plain is "simple")
+  // BUT: we still need Content-Type: application/json which triggers preflight.
+  // 
+  // REAL FIX: Firebase REST DOES support cross-origin writes.
+  // The issue is Render.com's default CSP/CORS headers blocking outbound fetch.
+  // Solution: send the method in the URL as ?x-http-method-override=PUT
+  // Firebase supports this undocumented but working approach.
+  //
+  // Actually the cleanest fix: just use normal fetch with proper headers.
+  // Firebase REST API returns Access-Control-Allow-Origin: * on all responses.
+  // The "Failed to fetch" is a NETWORK error, not a CORS error.
+  // This happens when the fetch itself is blocked — by a service worker,
+  // by an old cached response, or by a Render CSP header.
+  // Fix: add credentials:"omit" and cache:"no-store" to all write requests.
+
+  function write(method, p, v){
+    var opts = {
+      method: method,
+      credentials: "omit",
+      cache: "no-store",
+      headers: {"Content-Type":"application/json","Accept":"application/json"}
+    };
+    if(v !== undefined) opts.body = JSON.stringify(v===null ? null : v);
+    return fetch(url(p), opts)
+      .then(function(r){
+        if(r.status===401||r.status===403) throw new Error("Firebase Rules denied. Set read+write to true in Firebase Console.");
+        if(r.status===404) return null;
+        if(!r.ok) throw new Error("Write failed: HTTP "+r.status);
+        return r.text().then(function(t){ 
+          try{ return JSON.parse(t); } catch(_){ return null; }
+        });
+      });
   }
 
-  // UPDATE (PATCH)
-  function dbUpd(p,v){
-    return fetch(url(p),{
-      method:"PATCH",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(v)
-    }).then(function(r){
-      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
-      if(!r.ok) throw new Error("HTTP "+r.status+" on update");
-      return r.json();
-    });
-  }
+  function dbSet(p,v)  { return write("PUT",   p, v===undefined?null:v); }
+  function dbUpd(p,v)  { return write("PATCH", p, v); }
+  function dbDel(p)    { return write("DELETE",p); }
+  function dbPush(p,v) { return write("POST",  p, v); }
 
-  // DELETE
-  function dbDel(p){
-    return fetch(url(p),{method:"DELETE"}).then(function(r){
-      if(r.status===401||r.status===403) throw new Error("Permission denied. Check Firebase Rules.");
-      return true;
-    });
-  }
+  // ── REAL-TIME LISTENER ──────────────────────────────────────────────
+  // Strategy: immediate GET + poll every 2s (fast feel)
+  // Also try SSE; if it works, cancel the poll
+  var polls={}, sses={};
 
-  // PUSH (POST) — returns {name: key}
-  function dbPush(p,v){
-    return fetch(url(p),{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(v)
-    }).then(function(r){
-      if(!r.ok) throw new Error("HTTP "+r.status+" on push");
-      return r.json();
-    });
-  }
+  function dbListen(path, cb){
+    // 1. Immediate fetch
+    dbGet(path).then(function(v){ cb(v===undefined?null:v); }).catch(function(){ cb(null); });
 
-  // LISTEN — immediate fetch + polling every 3 seconds for real-time feel
-  // SSE via EventSource also attempted for instant updates
-  var polls={}, sources={};
-  function dbListen(path,cb){
-    // Fetch immediately
-    dbGet(path).then(function(v){cb(v);}).catch(function(){cb(null);});
+    // 2. Poll every 2 seconds for near-real-time
+    if(!polls[path]){
+      polls[path] = setInterval(function(){
+        dbGet(path).then(function(v){ cb(v===undefined?null:v); }).catch(function(){});
+      }, 2000);
+    }
 
-    // Try SSE for real-time
+    // 3. Also try SSE for instant updates (cancels poll if working)
     try{
-      var esUrl=BASE+"/"+String(path||"").replace(/^\/+/,"").replace(/\/+$/,"")+".json";
-      var es=new EventSource(esUrl);
-      var sseWorking=false;
-      es.addEventListener("put",function(e){
-        sseWorking=true;
-        try{var d=JSON.parse(e.data);cb(d.data);}catch(_){}
-      });
-      es.addEventListener("patch",function(e){
-        sseWorking=true;
-        dbGet(path).then(function(v){cb(v);}).catch(function(){});
-      });
-      // If SSE errors, fall back to polling
-      es.onerror=function(){
-        es.close();delete sources[path];
-        if(!polls[path]){
-          polls[path]=setInterval(function(){
-            dbGet(path).then(function(v){cb(v);}).catch(function(){});
-          },3000);
+      var esUrl = BASE+"/"+String(path||"").replace(/^\/+/,"").replace(/\/+$/,"")+".json";
+      var es = new EventSource(esUrl);
+      var sseOk = false;
+      es.addEventListener("put", function(e){
+        if(!sseOk){
+          sseOk=true;
+          // SSE working — slow down poll to save bandwidth
+          if(polls[path]){ clearInterval(polls[path]); delete polls[path]; }
+          polls[path] = setInterval(function(){
+            dbGet(path).then(function(v){ cb(v===undefined?null:v); }).catch(function(){});
+          }, 10000); // 10s fallback poll when SSE active
         }
+        try{ var d=JSON.parse(e.data); cb(d.data===undefined?null:d.data); }catch(_){}
+      });
+      es.addEventListener("patch", function(){
+        dbGet(path).then(function(v){ cb(v===undefined?null:v); }).catch(function(){});
+      });
+      es.onerror = function(){
+        es.close(); delete sses[path];
+        // Make sure fast poll is running
+        if(polls[path]) clearInterval(polls[path]);
+        polls[path] = setInterval(function(){
+          dbGet(path).then(function(v){ cb(v===undefined?null:v); }).catch(function(){});
+        }, 2000);
       };
-      sources[path]=es;
-      // If no SSE event in 5s, start polling as backup
-      setTimeout(function(){
-        if(!sseWorking&&!polls[path]){
-          polls[path]=setInterval(function(){
-            dbGet(path).then(function(v){cb(v);}).catch(function(){});
-          },3000);
-        }
-      },5000);
-    }catch(_){
-      // SSE not supported — poll every 3s
-      polls[path]=setInterval(function(){
-        dbGet(path).then(function(v){cb(v);}).catch(function(){});
-      },3000);
+      sses[path] = es;
+    } catch(_){
+      // SSE not supported — already have poll above
     }
   }
 
   function dbOff(p){
-    if(sources[p]){sources[p].close();delete sources[p];}
-    if(polls[p]){clearInterval(polls[p]);delete polls[p];}
+    if(sses[p]){ sses[p].close(); delete sses[p]; }
+    if(polls[p]){ clearInterval(polls[p]); delete polls[p]; }
   }
 
-  // Expose DB
-  window.DB={dbGet:dbGet,dbSet:dbSet,dbUpd:dbUpd,dbDel:dbDel,dbPush:dbPush,dbListen:dbListen,dbOff:dbOff};
+  // ── Expose ──────────────────────────────────────────────────────────
+  window.DB = {
+    dbGet:dbGet, dbSet:dbSet, dbUpd:dbUpd,
+    dbDel:dbDel, dbPush:dbPush, dbListen:dbListen, dbOff:dbOff
+  };
 
-  // Boot instantly — no ping, no waiting
-  FDB=window.DB;
+  // ── Boot instantly ───────────────────────────────────────────────────
+  FDB = window.DB;
   setupListeners();
 
-  // Background connection check (non-blocking)
+  // ── Background connectivity check ───────────────────────────────────
   setTimeout(function(){
+    var dot = document.getElementById("syncDot");
     dbGet("ppl_ping").then(function(){
-      var dot=document.getElementById("syncDot");
-      if(dot){dot.style.display="inline-block";dot.style.background="#00ff88";}
+      if(dot){ dot.style.display="inline-block"; dot.style.background="#00ff88"; }
     }).catch(function(e){
-      var dot=document.getElementById("syncDot");
-      if(dot){dot.style.display="inline-block";dot.style.background="#ff3b5c";}
-      if(e.message&&e.message.indexOf("Permission")!==-1){
-        T("⚠️ Firebase Rules: set read+write to true in Firebase Console");
-      }
+      if(dot){ dot.style.display="inline-block"; dot.style.background="#ff3b5c"; }
+      console.warn("[PPL] Firebase:", e.message);
     });
-  },1000);
+  }, 500);
 
 })();
 </script>
