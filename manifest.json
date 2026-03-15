@@ -1,0 +1,20 @@
+{
+  "name": "Pattan Premier League 2026",
+  "short_name": "PPL 2026",
+  "description": "Official app for Pattan Premier League 2026 — Live scores, alerts & more",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0a0f1e",
+  "background_color": "#040810",
+  "categories": ["sports"],
+  "lang": "en",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Live Score", "short_name": "Live", "url": "/", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Schedule",   "short_name": "Schedule", "url": "/", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
